@@ -2,7 +2,7 @@
 
 An interactive 3D model of a retail company's network: one head office and a 23-store chain, with every device wired the way a real retail environment would be. Click any device to inspect it, watch traffic move hop by hop, and work through realistic outages from first symptom to root cause.
 
-**Live demo:** https://ysingh2103.github.io/retail-network-lab/
+**Live demo:** https://ysingh2103.github.io/retail-network/
 
 > Built as a hands-on study of networking fundamentals and IT support for a multi-site retail environment. All addressing, hardware and scenarios are illustrative.
 
