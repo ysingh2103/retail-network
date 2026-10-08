@@ -1,0 +1,1173 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="description" content="Interactive 3D model of a retail head office and 23-store network: VLANs, SD-WAN with LTE failover, site-to-site VPN, POS traffic flows, and nine hands-on troubleshooting drills. Built by Yuvraj Singh.">
+<meta property="og:title" content="Retail Network Lab">
+<meta property="og:description" content="A 3D, clickable model of an HQ + 23-store retail network with live traffic flows and troubleshooting drills.">
+<meta property="og:type" content="website">
+<title>Retail Network Lab</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Chakra+Petch:wght@500;600&family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600&display=swap">
+<style>
+/* Layout: instrument-panel app. Left control panel + framed 3D stage; stacks (stage first) on phones. Single dark "comms room" look by choice. */
+:root{
+  --ink:#0b111c; --ink-2:#0f1726; --panel:#131d2d; --raise:#1a263a; --line:#26364f; --line-2:#33476a;
+  --fg:#e7edf6; --muted:#8fa0ba; --accent:#8fb4ff;
+  --ok:#4ed49b; --down:#ff5466; --warn:#ffa43a;
+  --pos:#f5c542; --staff:#5b9dff; --srv:#a7b8cc; --av:#ff8a65; --cam:#3fc9b5; --guest:#b48cff; --vpn:#6ee7ff; --wan:#dfe7f3; --trunk:#a9b8cf; --bt:#9ad0ff;
+  --display:"Chakra Petch", "Rajdhani", ui-sans-serif, system-ui, sans-serif;
+  --body:"IBM Plex Sans", ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
+  --mono:"IBM Plex Mono", ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  color-scheme:dark;
+}
+*{box-sizing:border-box}
+[hidden]{display:none!important}
+body{margin:0}
+html,body{height:100%}
+body{background:var(--ink);color:var(--fg);font-family:var(--body);font-size:14px;line-height:1.5}
+button{font:inherit;color:inherit;cursor:pointer}
+button:focus-visible,input:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.app{height:100%;display:grid;grid-template-columns:minmax(320px,380px) 1fr;gap:12px;padding-block:12px;padding-inline:16px}
+.panel{background:var(--panel);border:1px solid var(--line);border-radius:10px;display:flex;flex-direction:column;min-height:0;min-width:0;overflow:hidden}
+.brand{padding:16px 18px 12px;border-bottom:1px solid var(--line)}
+.brand .eyebrow{font-family:var(--mono);font-size:11px;letter-spacing:.12em;text-transform:uppercase;color:var(--muted)}
+.brand h1{font-family:var(--display);font-weight:600;font-size:24px;letter-spacing:.02em;margin:2px 0 4px;text-wrap:balance}
+.brand p{margin:0;color:var(--muted);font-size:13px}
+.tabs{display:flex;border-bottom:1px solid var(--line)}
+.tabs button{flex:1;background:none;border:0;padding:10px 6px;font-family:var(--display);font-weight:500;letter-spacing:.06em;text-transform:uppercase;font-size:12.5px;color:var(--muted);border-bottom:2px solid transparent}
+.tabs button[aria-selected="true"]{color:var(--fg);border-bottom-color:var(--accent)}
+.scroll{overflow:auto;min-height:0;flex:1;padding:14px 18px 22px;display:flex;flex-direction:column;gap:18px}
+h2{font-family:var(--display);font-weight:600;font-size:13px;letter-spacing:.1em;text-transform:uppercase;color:var(--muted);margin:0 0 8px}
+.seg{display:flex;gap:4px;background:var(--ink-2);border:1px solid var(--line);border-radius:8px;padding:3px;margin-bottom:8px}
+.seg button{flex:1;background:none;border:0;border-radius:6px;padding:5px 4px;font-family:var(--mono);font-size:12px;color:var(--muted)}
+.seg button[aria-pressed="true"]{background:var(--raise);color:var(--fg)}
+.flows{display:grid;gap:6px}
+.flow{display:grid;grid-template-columns:10px 1fr;gap:10px;align-items:start;text-align:left;background:var(--ink-2);border:1px solid var(--line);border-radius:8px;padding:8px 10px}
+.flow:hover{border-color:var(--line-2)}
+.flow[aria-pressed="true"]{border-color:var(--accent);background:var(--raise)}
+.flow .dot{width:10px;height:10px;border-radius:50%;margin-top:5px}
+.flow b{display:block;font-weight:500}
+.flow small{color:var(--muted);font-size:12px}
+.hops{margin:10px 0 0;padding:0;list-style:none;display:grid;gap:0;border-left:1px dashed var(--line-2);margin-left:5px}
+.hops li{position:relative;padding:0 0 10px 16px}
+.hops li::before{content:"";position:absolute;left:-5px;top:6px;width:9px;height:9px;border-radius:50%;background:var(--ink);border:2px solid var(--accent)}
+.hops b{font-weight:500;font-size:13px}
+.hops span{display:block;color:var(--muted);font-size:12.5px}
+.toggles{display:grid;gap:6px}
+.toggles label{display:flex;gap:8px;align-items:center;color:var(--fg);font-size:13px}
+.toggles input{accent-color:var(--accent)}
+.legend{display:grid;grid-template-columns:1fr 1fr;gap:6px 12px;font-size:12.5px;color:var(--muted)}
+.legend span{display:flex;align-items:center;gap:8px}
+.sw{width:22px;height:4px;border-radius:2px;flex:none}
+.sw.dash{background:repeating-linear-gradient(90deg,currentColor 0 5px,transparent 5px 9px)!important;height:3px}
+.tbl-wrap{overflow-x:auto;border:1px solid var(--line);border-radius:8px}
+table{border-collapse:collapse;width:100%;font-size:12.5px}
+th,td{padding:7px 9px;text-align:left;border-bottom:1px solid var(--line);white-space:nowrap}
+th{font-family:var(--mono);font-weight:500;color:var(--muted);font-size:11px;text-transform:uppercase;letter-spacing:.06em}
+td.mono{font-family:var(--mono);font-variant-numeric:tabular-nums}
+tr:last-child td{border-bottom:0}
+.vtag{display:inline-flex;align-items:center;gap:6px}
+.vtag i{width:8px;height:8px;border-radius:2px;display:inline-block}
+.notes{margin:0;padding-left:18px;color:var(--muted);font-size:13px;display:grid;gap:4px}
+.notes b{color:var(--fg);font-weight:500}
+/* incidents */
+.inc-list{display:grid;gap:8px}
+.inc{display:grid;grid-template-columns:auto 1fr auto;gap:10px;align-items:center;text-align:left;background:var(--ink-2);border:1px solid var(--line);border-radius:8px;padding:10px 12px}
+.inc:hover{border-color:var(--line-2)}
+.sev{font-family:var(--mono);font-size:11px;padding:2px 6px;border-radius:4px;border:1px solid}
+.sev.p1{color:var(--down);border-color:color-mix(in srgb,var(--down) 50%,transparent)}
+.sev.p2{color:var(--warn);border-color:color-mix(in srgb,var(--warn) 50%,transparent)}
+.sev.p3{color:var(--accent);border-color:color-mix(in srgb,var(--accent) 50%,transparent)}
+.inc b{display:block;font-weight:500}
+.inc small{color:var(--muted);font-size:12px}
+.done{font-family:var(--mono);font-size:11px;color:var(--ok)}
+.btn{background:var(--raise);border:1px solid var(--line-2);border-radius:7px;padding:7px 12px;font-size:13px}
+.btn:hover{border-color:var(--accent)}
+.btn.primary{background:var(--accent);color:#0b111c;border-color:var(--accent);font-weight:600}
+.btn:disabled{opacity:.45;cursor:not-allowed}
+.row{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+.ticket{background:var(--ink-2);border:1px solid var(--line);border-left:3px solid var(--down);border-radius:8px;padding:12px 14px}
+.ticket .meta{font-family:var(--mono);font-size:11.5px;color:var(--muted);display:flex;gap:10px;flex-wrap:wrap}
+.ticket q{display:block;margin-top:6px;font-size:14.5px;quotes:none}
+.checks{display:grid;gap:6px}
+.check{background:var(--ink-2);border:1px solid var(--line);border-radius:8px;overflow:hidden}
+.check button{width:100%;text-align:left;background:none;border:0;padding:8px 11px;display:flex;gap:8px;align-items:center}
+.check button::before{content:"›";font-family:var(--mono);color:var(--accent)}
+.check[data-run] button{color:var(--muted)}
+.check .out{font-family:var(--mono);font-size:12.5px;padding:8px 11px 10px;border-top:1px solid var(--line);background:#0a1019;white-space:pre-wrap}
+.tag{display:inline-block;font-family:var(--mono);font-size:10.5px;letter-spacing:.06em;text-transform:uppercase;padding:1px 6px;border-radius:4px;margin-bottom:4px}
+.tag.clue{color:var(--ok);background:color-mix(in srgb,var(--ok) 14%,transparent)}
+.tag.miss{color:var(--muted);background:color-mix(in srgb,var(--muted) 14%,transparent)}
+.tag.risk{color:var(--down);background:color-mix(in srgb,var(--down) 14%,transparent)}
+.opts{display:grid;gap:6px}
+.opts label{display:flex;gap:9px;align-items:flex-start;background:var(--ink-2);border:1px solid var(--line);border-radius:8px;padding:8px 11px;font-size:13.5px}
+.opts input{margin-top:3px;accent-color:var(--accent)}
+.feedback{border-radius:8px;padding:10px 12px;font-size:13.5px}
+.feedback.bad{background:color-mix(in srgb,var(--down) 12%,transparent);border:1px solid color-mix(in srgb,var(--down) 40%,transparent)}
+.feedback.good{background:color-mix(in srgb,var(--ok) 10%,transparent);border:1px solid color-mix(in srgb,var(--ok) 40%,transparent)}
+.feedback h3{font-family:var(--display);font-size:15px;margin:0 0 6px}
+.feedback ol,.feedback ul{margin:4px 0 10px;padding-left:18px;display:grid;gap:3px}
+.say{font-style:italic;color:var(--fg);border-left:2px solid var(--accent);padding-left:10px}
+.score{font-family:var(--mono);font-size:12px;color:var(--muted)}
+/* stage */
+.stage{position:relative;border:1px solid var(--line);border-radius:10px;overflow:hidden;min-height:0;min-width:0;background:var(--ink)}
+#c{display:block;width:100%;height:100%;touch-action:none}
+#labels{position:absolute;inset:0;pointer-events:none;overflow:hidden}
+.lbl{position:absolute;transform:translate(-50%,-100%);font-family:var(--mono);font-size:11px;white-space:nowrap;padding:2px 6px;border-radius:4px;background:rgba(11,17,28,.82);border:1px solid var(--line-2);color:var(--fg)}
+.lbl.down{border-color:var(--down);color:#ffd5da}
+.lbl.warn{border-color:var(--warn)}
+.lbl.sel{border-color:var(--accent)}
+.lbl.cloud{font-family:var(--display);font-size:12.5px;letter-spacing:.04em}
+.site-lbl{position:absolute;transform:translate(-50%,0);font-family:var(--display);font-weight:600;font-size:14px;letter-spacing:.08em;text-transform:uppercase;color:var(--fg);white-space:nowrap;text-shadow:0 1px 6px #000}
+.site-lbl small{display:block;font-family:var(--mono);font-weight:400;font-size:10.5px;letter-spacing:.04em;text-transform:none;color:var(--muted);text-align:center}
+.zone-lbl{position:absolute;font-family:var(--mono);font-size:10px;letter-spacing:.1em;text-transform:uppercase;color:#6c7d98;white-space:nowrap}
+.views{position:absolute;top:10px;right:10px;display:flex;gap:4px;flex-wrap:wrap;justify-content:flex-end;max-width:calc(100% - 20px)}
+.views button{background:rgba(19,29,45,.88);border:1px solid var(--line-2);border-radius:6px;padding:4px 9px;font-family:var(--mono);font-size:11.5px}
+.views button:hover{border-color:var(--accent)}
+.health{position:absolute;top:10px;left:10px;display:flex;gap:4px;flex-wrap:wrap;max-width:calc(100% - 20px)}
+.chip{display:inline-flex;align-items:center;gap:6px;background:rgba(19,29,45,.88);border:1px solid var(--line-2);border-radius:20px;padding:3px 9px;font-family:var(--mono);font-size:11px}
+.chip i{width:7px;height:7px;border-radius:50%;background:var(--ok)}
+.chip.down i{background:var(--down);box-shadow:0 0 8px var(--down)}
+.chip.warn i{background:var(--warn)}
+.hint{position:absolute;left:10px;bottom:10px;font-family:var(--mono);font-size:11px;color:var(--muted);background:rgba(11,17,28,.7);padding:3px 8px;border-radius:5px}
+#inspector{position:absolute;right:10px;bottom:10px;width:min(340px,calc(100% - 20px));max-height:calc(100% - 60px);overflow:auto;background:rgba(19,29,45,.96);border:1px solid var(--line-2);border-radius:10px;padding:12px 14px;box-shadow:0 10px 30px rgba(0,0,0,.45)}
+.ins-head{display:flex;justify-content:space-between;gap:10px;align-items:flex-start}
+.ins-head .eyebrow{font-family:var(--mono);font-size:10.5px;letter-spacing:.1em;text-transform:uppercase;color:var(--muted)}
+.ins-head h3{font-family:var(--display);font-size:17px;margin:1px 0 0;font-weight:600;text-wrap:balance}
+.x{background:none;border:1px solid var(--line-2);border-radius:6px;width:28px;height:28px;flex:none}
+.pill{display:inline-flex;gap:6px;align-items:center;font-family:var(--mono);font-size:11px;padding:2px 8px;border-radius:10px;margin:8px 0;background:color-mix(in srgb,var(--ok) 14%,transparent);color:var(--ok)}
+.pill.down{background:color-mix(in srgb,var(--down) 16%,transparent);color:var(--down)}
+.pill.warn{background:color-mix(in srgb,var(--warn) 16%,transparent);color:var(--warn)}
+dl.kv{display:grid;grid-template-columns:auto 1fr;gap:4px 12px;margin:0 0 8px;font-size:12.5px}
+dl.kv dt{color:var(--muted);font-family:var(--mono);font-size:11px;text-transform:uppercase;letter-spacing:.06em;padding-top:2px}
+dl.kv dd{margin:0;min-width:0;overflow-wrap:anywhere}
+#inspector h4{font-family:var(--display);font-size:12px;letter-spacing:.1em;text-transform:uppercase;color:var(--muted);margin:10px 0 4px}
+#inspector p{margin:0;font-size:13px}
+#inspector ul,#inspector ol{margin:0;padding-left:18px;font-size:12.5px;display:grid;gap:2px}
+.conn{list-style:none;padding:0!important}
+.conn button{background:none;border:0;padding:1px 0;text-align:left;color:var(--accent);text-decoration:underline;text-underline-offset:2px}
+.conn span{color:var(--muted)}
+.credit{margin:6px 0 0!important;font-family:var(--mono);font-size:11.5px}
+.credit a,.brand a{color:var(--accent)}
+a.btn{text-decoration:none;color:var(--fg)}
+.brand-top{display:flex;justify-content:space-between;align-items:center;gap:8px}
+.btn.sm{padding:3px 9px;font-size:11.5px;font-family:var(--mono)}
+#modeBtn[aria-pressed="true"]{border-color:var(--accent);color:var(--accent)}
+.role-list{display:grid;gap:8px}
+.role{background:var(--ink-2);border:1px solid var(--line);border-radius:8px;padding:11px 12px;display:grid;gap:7px}
+.role.on{border-color:var(--accent)}
+.role h3{font-family:var(--display);font-weight:600;font-size:15px;margin:0;text-wrap:balance}
+.role .jd{font-size:12.5px;color:var(--muted);margin:0}
+.role .where{font-size:12.5px;margin:0}
+.role .where b,.role .lbl2{font-family:var(--mono);font-weight:500;font-size:10.5px;text-transform:uppercase;letter-spacing:.08em;color:var(--muted)}
+.role ul{margin:0;padding-left:18px;font-size:13px;display:grid;gap:2px}
+#tour{position:absolute;left:10px;bottom:10px;width:min(400px,calc(100% - 20px));background:rgba(19,29,45,.97);border:1px solid var(--accent);border-radius:10px;padding:12px 14px;box-shadow:0 10px 30px rgba(0,0,0,.45);display:grid;gap:7px}
+#tour[hidden]{display:none!important}
+.tour-meta{display:flex;justify-content:space-between;align-items:center;font-family:var(--mono);font-size:11px;color:var(--muted)}
+#tour h3{font-family:var(--display);font-size:17px;margin:0;font-weight:600}
+#tour p{margin:0;font-size:13.5px}
+body.present .coach{display:none!important}
+@media (max-width:860px){
+  html,body{height:auto}
+  .app{height:auto;grid-template-columns:1fr;grid-template-rows:auto auto}
+  .stage{order:-1;height:58vh;min-height:360px}
+  .panel{max-height:none}
+  .scroll{overflow:visible}
+  .hint{display:none}
+  #inspector{max-height:calc(100% - 50px)}
+}
+@media (prefers-reduced-motion:reduce){*{scroll-behavior:auto}}
+</style>
+</head>
+<body>
+
+<div class="app">
+  <aside class="panel" aria-label="Controls">
+    <header class="brand">
+      <div class="brand-top">
+        <div class="eyebrow" id="eyebrow">Networking portfolio · Yuvraj Singh</div>
+        <a class="btn sm" href="https://github.com/ysingh2103" target="_blank" rel="noopener">GitHub</a>
+      </div>
+      <h1 id="h1">Retail Network Lab</h1>
+      <p id="lede">A head office and a 23-store retail chain, modeled in 3D. Every store runs the same template, so three stand in for all 23. Click any device, watch the traffic, or work through an outage.</p>
+      <p class="credit">Built by Yuvraj Singh · <a href="https://linkedin.com/in/y-singh-gill" target="_blank" rel="noopener">LinkedIn</a></p>
+    </header>
+    <nav class="tabs" role="tablist">
+      <button role="tab" aria-selected="true" data-tab="role" id="tab-btn-role">Role</button>
+      <button role="tab" aria-selected="false" data-tab="explore" id="tab-btn-explore">Traffic</button>
+      <button role="tab" aria-selected="false" data-tab="incidents" id="tab-btn-incidents">Incidents</button>
+      <button role="tab" aria-selected="false" data-tab="docs" id="tab-btn-docs">Docs</button>
+    </nav>
+
+    <div class="scroll" id="tab-role" role="tabpanel">
+      <section>
+        <div class="row" style="justify-content:space-between;margin-bottom:8px">
+          <h2 style="margin:0">The IT role, mapped to the network</h2>
+          <button class="btn primary sm" id="tourBtn">Start guided tour</button>
+        </div>
+        <p style="margin:0 0 10px;color:var(--muted);font-size:13px">Each responsibility of a retail IT specialist role, where it lives in this model, and how I’d handle it. Press “Show” to light up the devices involved.</p>
+        <div class="role-list" id="roleList"></div>
+      </section>
+    </div>
+
+    <div class="scroll" id="tab-explore" role="tabpanel" hidden>
+      <section>
+        <h2>Watch the traffic</h2>
+        <div class="seg" id="storeSeg" role="group" aria-label="Store">
+          <button aria-pressed="true" data-store="s1">Store 01</button>
+          <button aria-pressed="false" data-store="s2">Store 12</button>
+          <button aria-pressed="false" data-store="s3">Store 23</button>
+        </div>
+        <div class="flows" id="flowList"></div>
+        <ol class="hops" id="hops" hidden></ol>
+      </section>
+      <section>
+        <h2>Layers</h2>
+        <div class="toggles">
+          <label><input type="checkbox" id="tgLabels"> Label every device</label>
+          <label><input type="checkbox" id="tgWireless" checked> Wi-Fi, Bluetooth and cellular links</label>
+          <label><input type="checkbox" id="tgVpn" checked> Site-to-site VPN tunnels</label>
+          <label><input type="checkbox" id="tgAmbient" checked> Background traffic</label>
+        </div>
+      </section>
+      <section>
+        <h2>Legend</h2>
+        <div class="legend">
+          <span><i class="sw" style="background:var(--wan)"></i>WAN / ISP</span>
+          <span><i class="sw" style="background:var(--trunk)"></i>Trunk (tagged)</span>
+          <span><i class="sw" style="background:var(--pos)"></i>VLAN 10 POS</span>
+          <span><i class="sw" style="background:var(--staff)"></i>VLAN 20 Staff</span>
+          <span><i class="sw" style="background:var(--srv)"></i>VLAN 30 Servers</span>
+          <span><i class="sw" style="background:var(--av)"></i>VLAN 40 AV</span>
+          <span><i class="sw" style="background:var(--cam)"></i>VLAN 50 Cameras</span>
+          <span><i class="sw" style="background:var(--guest)"></i>VLAN 60 Guest</span>
+          <span style="color:var(--vpn)"><i class="sw dash"></i><em style="color:var(--muted);font-style:normal">IPsec VPN</em></span>
+          <span style="color:var(--bt)"><i class="sw dash"></i><em style="color:var(--muted);font-style:normal">Wi-Fi / Bluetooth</em></span>
+        </div>
+      </section>
+    </div>
+
+    <div class="scroll" id="tab-incidents" role="tabpanel" hidden>
+      <div id="incHome">
+        <section>
+          <h2>Incident drills</h2>
+          <p style="margin:0 0 10px;color:var(--muted);font-size:13px">Pick a ticket. The fault appears in the model. Run checks, make the call, then apply the fix and watch traffic recover.</p>
+          <div class="inc-list" id="incList"></div>
+        </section>
+      </div>
+      <div id="incActive" hidden></div>
+    </div>
+
+    <div class="scroll" id="tab-docs" role="tabpanel" hidden>
+      <section>
+        <h2>Hardware inventory</h2>
+        <div class="seg" id="invSeg" role="group" aria-label="Inventory site">
+          <button aria-pressed="true" data-inv="all">All</button>
+          <button aria-pressed="false" data-inv="hq">HQ</button>
+          <button aria-pressed="false" data-inv="s1">01</button>
+          <button aria-pressed="false" data-inv="s2">12</button>
+          <button aria-pressed="false" data-inv="s3">23</button>
+          <button aria-pressed="false" data-inv="cloud">Cloud</button>
+        </div>
+        <div class="tbl-wrap" style="max-height:300px;overflow:auto"><table><thead><tr><th>Device</th><th>Site</th><th>IP</th><th>Hardware</th></tr></thead><tbody id="invBody"></tbody></table></div>
+        <p class="score" id="invNote" style="margin-top:6px"></p>
+      </section>
+      <section>
+        <h2>Disaster recovery targets</h2>
+        <div class="tbl-wrap">
+          <table>
+            <thead><tr><th>System</th><th>RTO</th><th>RPO</th><th>How</th></tr></thead>
+            <tbody>
+              <tr><td>Store payments</td><td>Minutes</td><td>0 (SaaS)</td><td>LTE failover, backup payment procedure, spare iPad + reader</td></tr>
+              <tr><td>Store internet</td><td>&lt; 1 min</td><td>—</td><td>SD-WAN fails over to LTE</td></tr>
+              <tr><td>HQ firewall</td><td>&lt; 1 min</td><td>—</td><td>HA pair; config backed up after every change</td></tr>
+              <tr><td>Microsoft 365</td><td>Vendor</td><td>24 h</td><td>Microsoft runs the service; third-party backup for mail and files</td></tr>
+              <tr><td>HQ file share</td><td>4 h</td><td>24 h</td><td>Nightly off-site backup; quarterly restore test</td></tr>
+            </tbody>
+          </table>
+        </div>
+        <p class="score" style="margin-top:6px">RTO: how fast it must be back. RPO: how much data loss is acceptable. Targets here are my assumptions to discuss.</p>
+      </section>
+      <section>
+        <h2>Runbook · network or routing upgrade</h2>
+        <ol class="notes">
+          <li>Back up current configs; note firmware versions</li>
+          <li>Write the steps and a rollback plan; get change approval</li>
+          <li>Schedule after hours; tell affected users and stores</li>
+          <li>Make the change; test internet, Wi-Fi, payments and every VPN tunnel</li>
+          <li>Monitor for 24 h; update diagrams and the IP plan</li>
+        </ol>
+      </section>
+      <section>
+        <h2>Runbook · new store install</h2>
+        <ol class="notes">
+          <li>Pre-stage firewall, switch and AP at HQ from the store template</li>
+          <li>Activate the LTE SIM and test failover before shipping</li>
+          <li>On site: patch, power on, check monitoring sees every device</li>
+          <li>Test a real card payment, guest Wi-Fi isolation and the camera</li>
+          <li>Add serials and IPs to inventory; label cables</li>
+        </ol>
+      </section>
+      <section>
+        <h2>Checklist · evaluating new software</h2>
+        <ul class="notes">
+          <li>Supports SSO with Entra ID and enforces MFA</li>
+          <li>Where data is stored; SOC 2 or ISO 27001 report</li>
+          <li>Admin roles and least-privilege access</li>
+          <li>Access can be removed in offboarding</li>
+          <li>Doesn’t duplicate a tool we already pay for</li>
+        </ul>
+      </section>
+      <section>
+        <h2>VLANs and subnets</h2>
+        <div class="tbl-wrap">
+          <table>
+            <thead><tr><th>VLAN</th><th>HQ</th><th>Store NN</th></tr></thead>
+            <tbody>
+              <tr><td><span class="vtag"><i style="background:var(--pos)"></i>10 POS</span></td><td class="mono">—</td><td class="mono">10.NN.10.0/24</td></tr>
+              <tr><td><span class="vtag"><i style="background:var(--staff)"></i>20 Staff</span></td><td class="mono">10.0.20.0/24</td><td class="mono">10.NN.20.0/24</td></tr>
+              <tr><td><span class="vtag"><i style="background:var(--srv)"></i>30 Servers</span></td><td class="mono">10.0.30.0/24</td><td class="mono">—</td></tr>
+              <tr><td><span class="vtag"><i style="background:var(--av)"></i>40 AV</span></td><td class="mono">10.0.40.0/24</td><td class="mono">—</td></tr>
+              <tr><td><span class="vtag"><i style="background:var(--cam)"></i>50 Cameras</span></td><td class="mono">—</td><td class="mono">10.NN.50.0/24</td></tr>
+              <tr><td><span class="vtag"><i style="background:var(--guest)"></i>60 Guest</span></td><td class="mono">10.0.60.0/24</td><td class="mono">10.NN.60.0/24</td></tr>
+              <tr><td><span class="vtag"><i style="background:#8892a6"></i>99 Mgmt</span></td><td class="mono">10.0.99.0/24</td><td class="mono">10.NN.99.0/24</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </section>
+      <section>
+        <h2>Rules of the template</h2>
+        <ul class="notes">
+          <li><b>NN is the store number.</b> Store 01 is 10.1.x.x, Store 23 is 10.23.x.x. You can tell where a device is from its IP.</li>
+          <li><b>Gateway is always .1</b> on every VLAN, and it lives on the firewall.</li>
+          <li><b>POS is isolated.</b> VLAN 10 can reach only Shopify and the payment processor (PCI DSS scope stays small).</li>
+          <li><b>Guest reaches the internet only.</b> Client isolation on, no access to POS, Staff or the VPN.</li>
+          <li><b>Reservations</b> for registers, printers and cameras so their IPs never change.</li>
+          <li><b>Two internet paths per store:</b> cable (WAN1) and LTE (WAN2). SD-WAN on the firewall fails over automatically.</li>
+          <li><b>Every store has an IPsec tunnel to HQ</b> for the file share and back-office apps. Payments never use the tunnel.</li>
+        </ul>
+      </section>
+      <section>
+        <h2>Common ports</h2>
+        <div class="tbl-wrap">
+          <table>
+            <thead><tr><th>Port</th><th>Service</th><th>Where you see it here</th></tr></thead>
+            <tbody>
+              <tr><td class="mono">53</td><td>DNS</td><td>PC → infra server → public DNS</td></tr>
+              <tr><td class="mono">67/68</td><td>DHCP</td><td>Firewall hands out store addresses</td></tr>
+              <tr><td class="mono">443</td><td>HTTPS</td><td>POS → Shopify, Mac → Microsoft 365</td></tr>
+              <tr><td class="mono">445</td><td>SMB</td><td>Store PC → HQ NAS over VPN</td></tr>
+              <tr><td class="mono">500/4500</td><td>IPsec</td><td>Store ↔ HQ tunnels</td></tr>
+              <tr><td class="mono">631</td><td>IPP</td><td>Mac → HQ printer</td></tr>
+              <tr><td class="mono">3478–3481</td><td>Teams media</td><td>Boardroom calls (UDP)</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </section>
+    </div>
+  </aside>
+
+  <main class="stage" id="stage">
+    <canvas id="c" aria-label="3D model of the HQ and store networks"></canvas>
+    <div id="labels"></div>
+    <div class="health" id="health"></div>
+    <div class="views" id="views">
+      <button data-view="overview">Overview</button>
+      <button data-view="hq">HQ</button>
+      <button data-view="s1">Store 01</button>
+      <button data-view="s2">Store 12</button>
+      <button data-view="s3">Store 23</button>
+      <button data-view="cloud">Cloud</button>
+    </div>
+    <div class="hint">Drag to orbit · scroll to zoom · right-drag to pan · click any device</div>
+    <div id="inspector" hidden></div>
+    <div id="tour" hidden>
+      <div class="tour-meta"><span id="tourStep"></span><button class="x" id="tourEnd" aria-label="End tour">✕</button></div>
+      <h3 id="tourTitle"></h3>
+      <p id="tourText"></p>
+      <div class="row"><button class="btn" id="tourPrev">Back</button><button class="btn primary" id="tourNext">Next</button></div>
+    </div>
+  </main>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
+<script>
+(function(){
+"use strict";
+const $=s=>document.querySelector(s);
+const REDUCED=window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+
+/* ---------- colours ---------- */
+const C={pos:0xf5c542,staff:0x5b9dff,srv:0xa7b8cc,av:0xff8a65,cam:0x3fc9b5,guest:0xb48cff,vpn:0x6ee7ff,wan:0xdfe7f3,trunk:0xa9b8cf,bt:0x9ad0ff,down:0xff5466,warn:0xffa43a,ok:0x4ed49b,accent:0x8fb4ff,resp:0x6ee7ff};
+const VLAN_NAME={pos:"VLAN 10 · POS",staff:"VLAN 20 · Staff",srv:"VLAN 30 · Servers",av:"VLAN 40 · AV",cam:"VLAN 50 · Cameras",guest:"VLAN 60 · Guest"};
+const KIND_NAME={wan:"WAN / ISP",trunk:"Trunk (tagged VLANs)",access:"Access port",wifi:"Wi-Fi",bt:"Bluetooth",vpn:"IPsec VPN tunnel",cell:"Cellular (LTE)",hdmi:"HDMI",usb:"USB"};
+
+/* ---------- sites ---------- */
+const SITES={
+  hq:{name:"HQ",sub:"Toronto · 10.0.0.0/16",x:-15,z:0,w:21,d:15.5},
+  s1:{name:"Store 01",sub:"10.1.0.0/16",x:10,z:-13,w:11,d:8.6,n:1},
+  s2:{name:"Store 12",sub:"10.12.0.0/16",x:10,z:0,w:11,d:8.6,n:12},
+  s3:{name:"Store 23",sub:"10.23.0.0/16",x:10,z:13,w:11,d:8.6,n:23}
+};
+
+/* ---------- devices ---------- */
+const NODES=[];const NMAP={};
+function N(id,type,site,rx,rz,name,info){const n=Object.assign({id,type,site,rx,rz,name},info||{});NODES.push(n);NMAP[id]=n;}
+N("hq-modem","modem","hq",-8.8,-5.3,"Fibre ONT (ISP)",{ip:"203.0.113.10 (public, static)",vlan:"WAN",model:"ISP fibre ONT · 1 Gbps"});
+N("hq-fw","firewall","hq",-6.2,-5.3,"HQ firewall",{ip:"10.0.99.1 · gateway .1 on every VLAN",vlan:"WAN + trunk (all VLANs)",model:"FortiGate 100F (HA pair)"});
+N("hq-core","l3switch","hq",-3.2,-5.3,"Core switch (Layer 3)",{ip:"10.0.99.2",vlan:"Trunk",model:"Aruba CX 6300 / Cisco C9300"});
+N("hq-srv","server","hq",-5.6,-2.6,"Infra server",{ip:"10.0.30.10 (static)",vlan:"30 · Servers",model:"Windows Server · DNS, print"});
+N("hq-nas","nas","hq",-3,-2.6,"NAS · file share + backups",{ip:"10.0.30.20 (static)",vlan:"30 · Servers",model:"Synology rack NAS"});
+N("hq-asw1","switch","hq",0.4,-5.3,"Access switch · open office",{ip:"10.0.99.11",vlan:"Trunk uplink · access ports VLAN 20",model:"48-port PoE+"});
+N("hq-asw2","switch","hq",5.6,-5.3,"Access switch · boardroom",{ip:"10.0.99.12",vlan:"Trunk uplink · access ports VLAN 40",model:"24-port PoE+"});
+N("hq-desksw","minisw","hq",-4.6,1.9,"Desk switch (unmanaged)",{ip:"none (unmanaged)",vlan:"20 · Staff",model:"5-port unmanaged"});
+N("hq-ap1","ap","hq",-0.6,0.6,"Wi-Fi AP · open office",{ip:"10.0.99.21",vlan:"Corp-Staff → 20 · Corp-Guest → 60",model:"Wi-Fi 6 ceiling AP (PoE)"});
+N("hq-ap2","ap","hq",6.2,0.6,"Wi-Fi AP · boardroom",{ip:"10.0.99.22",vlan:"Corp-Staff → 20 · Corp-Guest → 60",model:"Wi-Fi 6 ceiling AP (PoE)"});
+N("hq-pc1","pc","hq",-7.6,1.9,"Windows PC · finance",{ip:"10.0.20.45 (DHCP)",vlan:"20 · Staff",model:"Windows 11 · Intune"});
+N("hq-pc2","pc","hq",-4.6,3.7,"Windows PC · operations",{ip:"10.0.20.61 (DHCP)",vlan:"20 · Staff",model:"Windows 11 · Intune"});
+N("hq-printer","printer","hq",-9,5.8,"Printer (MFP)",{ip:"10.0.20.250 (reservation)",vlan:"20 · Staff",model:"Multifunction laser"});
+N("hq-mac1","mac","hq",-1.8,4.6,"MacBook · marketing",{ip:"10.0.20.112 (DHCP)",vlan:"20 · Staff (Wi-Fi)",model:"macOS · MDM enrolled"});
+N("hq-mac2","mac","hq",0.9,4.6,"MacBook · design",{ip:"10.0.20.118 (DHCP)",vlan:"20 · Staff (Wi-Fi)",model:"macOS · MDM enrolled"});
+N("hq-avpc","avpc","hq",9,3,"Teams Room compute",{ip:"10.0.40.15 (reservation)",vlan:"40 · AV",model:"Teams Rooms on Windows"});
+N("hq-display","display","hq",6.2,6.7,"Boardroom display",{ip:"—",vlan:"HDMI from Teams Room",model:"75-inch display"});
+N("hq-avbar","avbar","hq",6.2,6.62,"Camera + mic bar",{ip:"—",vlan:"USB to Teams Room",model:"USB video bar"});
+["s1","s2","s3"].forEach(s=>{
+  const n=SITES[s].n;
+  N(s+"-modem","modem",s,-4.3,-2.9,"Cable modem (WAN1)",{ip:"Public IP from ISP (DHCP)",vlan:"WAN1 · primary",model:"ISP cable modem"});
+  N(s+"-lte","lte",s,-4.3,-1.1,"LTE failover (WAN2)",{ip:"Carrier-assigned",vlan:"WAN2 · backup",model:"LTE router"});
+  N(s+"-fw","firewall",s,-1.9,-2.9,"Store firewall · SD-WAN",{ip:`10.${n}.99.1 · gateway .1 per VLAN`,vlan:"WAN1 + WAN2 + trunk",model:"FortiGate 40F"});
+  N(s+"-sw","switch",s,0.7,-2.9,"PoE switch",{ip:`10.${n}.99.2`,vlan:"Trunk uplink",model:"8-port PoE+"});
+  N(s+"-pc","pc",s,3.7,-2.7,"Back-office PC",{ip:`10.${n}.20.21 (DHCP)`,vlan:"20 · Staff",model:"Windows 11 · Intune"});
+  N(s+"-ap","ap",s,0.5,0.4,"Wi-Fi AP",{ip:`10.${n}.99.11`,vlan:"Staff → 20 · Guest → 60",model:"Wi-Fi 6 AP (PoE)"});
+  N(s+"-cam","camera",s,4.7,3.4,"IP camera",{ip:`10.${n}.50.31 (reservation)`,vlan:"50 · Cameras",model:"PoE dome camera"});
+  N(s+"-pos1","pos",s,-2.3,2.45,"POS · register 1",{ip:`10.${n}.10.11 (reservation)`,vlan:"10 · POS",model:"iPad + Shopify POS"});
+  N(s+"-pos2","pos",s,-0.3,2.45,"POS · register 2",{ip:`10.${n}.10.12 (reservation)`,vlan:"10 · POS",model:"iPad + Shopify POS"});
+  N(s+"-rdr1","reader",s,-1.75,2.8,"Card reader · reg 1",{ip:"— (Bluetooth to iPad)",vlan:"Bluetooth",model:"Shopify Tap & Chip reader"});
+  N(s+"-rdr2","reader",s,0.25,2.8,"Card reader · reg 2",{ip:"— (Bluetooth to iPad)",vlan:"Bluetooth",model:"Shopify Tap & Chip reader"});
+  N(s+"-guest","phone",s,2.8,1.5,"Customer phone",{ip:`10.${n}.60.x (DHCP)`,vlan:"60 · Guest (isolated)",model:"Any phone"});
+});
+N("internet","cloud",null,-2.5,0,"Internet",{y:8.5});
+N("shopify","service",null,-6.5,-6.5,"Shopify (POS + Admin)",{y:12,col:0x95bf47,role:"Runs the POS app, orders and inventory for online and all stores.",ip:"SaaS",vlan:"—",model:"Cloud"});
+N("pay","service",null,0.5,-7.5,"Shopify Payments",{y:12.6,col:C.pos,role:"Authorizes card payments and returns approved or declined.",ip:"SaaS",vlan:"—",model:"Payment processor"});
+N("m365","service",null,-10,5.5,"Microsoft 365 + Entra ID",{y:11.5,col:C.staff,role:"Email, Teams, OneDrive, and the identity system that runs sign-in, MFA and conditional access.",ip:"SaaS",vlan:"—",model:"Cloud"});
+N("dns","service",null,3,6.5,"Public DNS",{y:11,col:C.srv,role:"Public resolver the HQ DNS server forwards to.",ip:"1.1.1.1",vlan:"—",model:"Resolver"});
+N("backup","service",null,-14,-4,"Off-site backup",{y:10.5,col:0x7dd3c0,role:"Cloud copy of the NAS and Microsoft 365 data. The off-site “1” in the 3-2-1 rule.",ip:"SaaS",vlan:"—",model:"Cloud backup service"});
+N("rmm","service",null,5.5,-2,"Monitoring + MDM",{y:12,col:C.accent,role:"Watches every firewall, switch and AP, alerts IT when something drops, and pushes apps and policies to Macs and PCs.",ip:"SaaS",vlan:"—",model:"RMM / MDM platform"});
+
+/* ---------- links ---------- */
+const LINKS=[];const LMAP={};
+const key=(a,b)=>a<b?a+"~"+b:b+"~"+a;
+function L(a,b,kind,vlan){const l={a,b,kind,vlan,k:key(a,b)};LINKS.push(l);LMAP[l.k]=l;}
+L("hq-modem","internet","wan");L("hq-fw","hq-modem","wan");L("hq-core","hq-fw","trunk");
+L("hq-core","hq-srv","access","srv");L("hq-core","hq-nas","access","srv");
+L("hq-core","hq-asw1","trunk");L("hq-core","hq-asw2","trunk");
+L("hq-asw1","hq-ap1","trunk");L("hq-asw2","hq-ap2","trunk");
+L("hq-asw1","hq-pc1","access","staff");L("hq-asw1","hq-desksw","access","staff");L("hq-desksw","hq-pc2","access","staff");
+L("hq-asw1","hq-printer","access","staff");
+L("hq-ap1","hq-mac1","wifi","staff");L("hq-ap1","hq-mac2","wifi","staff");
+L("hq-asw2","hq-avpc","access","av");L("hq-avpc","hq-display","hdmi","av");L("hq-avpc","hq-avbar","usb","av");
+["s1","s2","s3"].forEach(s=>{
+  L(s+"-modem","internet","wan");L(s+"-lte","internet","cell");
+  L(s+"-fw",s+"-modem","wan");L(s+"-fw",s+"-lte","wan");
+  L(s+"-sw",s+"-fw","trunk");L(s+"-sw",s+"-ap","trunk");
+  L(s+"-sw",s+"-pos1","access","pos");L(s+"-sw",s+"-pos2","access","pos");
+  L(s+"-rdr1",s+"-pos1","bt","pos");L(s+"-rdr2",s+"-pos2","bt","pos");
+  L(s+"-sw",s+"-pc","access","staff");L(s+"-sw",s+"-cam","access","cam");
+  L(s+"-ap",s+"-guest","wifi","guest");
+  L(s+"-fw","hq-fw","vpn");
+});
+L("internet","shopify","wan");L("internet","pay","wan");L("internet","m365","wan");L("internet","dns","wan");L("internet","backup","wan");L("internet","rmm","wan");
+
+/* ---------- device knowledge ---------- */
+const TYPE={
+ modem:{label:"ISP modem",role:"Connects the site to the ISP. Everything leaving the site passes through it.",check:["Power and Online / Internet lights","Power-cycle in order: modem, wait 2 min, then firewall","No signal → ISP problem: open a ticket, confirm failover took over"]},
+ lte:{label:"LTE backup",role:"Second internet path over cellular. The firewall switches to it automatically if WAN1 fails.",check:["Signal LED","SIM active and data plan not used up","Firewall shows WAN2 healthy, not just plugged in"]},
+ firewall:{label:"Firewall",role:"Gateway for every VLAN. Decides who can talk to whom, does NAT, terminates the VPN to HQ and runs SD-WAN failover.",check:["Is it checking in to monitoring?","WAN interface has an IP and gateway","VPN tunnel status (Phase 1 and Phase 2)","Recent config or firmware changes"]},
+ l3switch:{label:"Core switch",role:"Routes between HQ VLANs and links every access switch to the firewall.",check:["Uplink to the firewall","CPU and broadcast levels","Spanning Tree topology changes"]},
+ switch:{label:"Access switch",role:"Gives devices a wired port on the right VLAN and powers APs and cameras with PoE.",check:["Port link light and speed","Port VLAN assignment","PoE budget","Loop / broadcast storm alerts"]},
+ minisw:{label:"Unmanaged switch",role:"Adds ports at a desk. No VLANs and no loop protection, so it is a classic cause of network loops.",check:["Two cables to the wall = loop","Power","Replace with a managed port where possible"]},
+ server:{label:"Server",role:"Runs internal DNS and print services for HQ.",check:["Is the service running, not just the server?","Event logs after patch reboots","Disk space"]},
+ nas:{label:"NAS",role:"Shared drives and local backup target. A copy also goes off-site (3-2-1 rule).",check:["Volume health","Share permissions","Last backup and last restore test"]},
+ ap:{label:"Wi-Fi access point",role:"Broadcasts the Staff and Guest SSIDs and puts each on its own VLAN.",check:["PoE power from the switch","Channel and interference","Client load","SSID → VLAN mapping"]},
+ pc:{label:"Windows PC",role:"Staff workstation managed by Intune.",check:["ipconfig /all (169.254.x.x = DHCP failed)","ping gateway → ping 1.1.1.1 → ping a name","nslookup to test DNS","Cable and port light"]},
+ mac:{label:"MacBook",role:"Staff laptop on Wi-Fi, enrolled in MDM.",check:["Forget the Wi-Fi network and rejoin","ifconfig / networksetup for IP details","Keychain prompts after a password change","FileVault: fdesetup status"]},
+ printer:{label:"Printer",role:"Network printer with a DHCP reservation so its IP never moves.",check:["Same VLAN as the user?","IP still matches the reservation","Print queue and driver"]},
+ avpc:{label:"Teams Room",role:"Dedicated meeting computer. Drives the display over HDMI and the camera/mic bar over USB.",check:["Online in Teams admin center","HDMI and USB seated","Display input source"]},
+ display:{label:"Display",role:"Boardroom screen fed over HDMI.",check:["Input source","HDMI cable at both ends","Power / HDMI-CEC"]},
+ avbar:{label:"Camera + mic bar",role:"USB camera, microphones and speaker for the room.",check:["USB connection","Selected devices in Teams settings","Firmware"]},
+ pos:{label:"POS register",role:"iPad running Shopify POS on the isolated POS VLAN.",check:["Can it load any website? (network vs app)","POS app → Settings → Hardware","Restart the app, then the iPad","Right VLAN and IP reservation"]},
+ reader:{label:"Card reader",role:"Takes tap and chip payments and talks to its iPad over Bluetooth.",check:["Battery","Pairing in the POS app","Swap in the spare reader"]},
+ camera:{label:"IP camera",role:"PoE camera on its own VLAN, isolated from POS and staff devices.",check:["PoE power on the port","On VLAN 50","Recording status"]},
+ phone:{label:"Guest device",role:"A customer phone on Guest Wi-Fi. It can reach the internet and nothing else.",check:["Guest VLAN isolation","Captive portal","Bandwidth limit"]},
+ cloud:{label:"Internet",role:"The public internet. Each site reaches it through its own ISP.",check:["Is it one site or every site?","ISP status pages"]},
+ service:{label:"Cloud service",role:"",check:["Vendor status page","Is every site affected, or just one?"]}
+};
+
+/* ---------- flows ---------- */
+const FLOWS={};
+function F(id,o){FLOWS[id]=o;}
+const STORE_FLOW_TYPES=[
+ {t:"pay",name:"Card payment",sub:"Reader → iPad → firewall → Shopify Payments",color:C.pos,
+  nodes:s=>[s+"-rdr1",s+"-pos1",s+"-sw",s+"-fw",s+"-modem","internet","pay"],
+  notes:["Customer taps a card. The reader sends the encrypted payment to the iPad over Bluetooth.","Shopify POS wraps it in HTTPS (TCP 443). The iPad sits on VLAN 10, POS.","Access port on VLAN 10. The same switch powers the AP and camera.","Gateway .1 for VLAN 10. Policy: POS may reach Shopify only. NAT to the public IP.","Cable modem to the ISP. If WAN1 dies, SD-WAN moves this to LTE.","Public internet.","Card authorized; approved or declined travels back the same way."]},
+ {t:"sync",name:"Inventory sync",sub:"Register ↔ Shopify admin",color:0x95bf47,
+  nodes:s=>[s+"-pos2",s+"-sw",s+"-fw",s+"-modem","internet","shopify"],
+  notes:["Register sends the sale and pulls stock levels.","VLAN 10 access port.","Policy allows POS → Shopify, nothing else.","WAN1 to the ISP.","Public internet.","Shopify updates stock across online, Amazon and all 23 stores."]},
+ {t:"hq",name:"Back office → HQ files",sub:"Through the site-to-site VPN",color:C.staff,
+  nodes:s=>[s+"-pc",s+"-sw",s+"-fw","hq-fw","hq-core","hq-nas"],
+  notes:["Back-office PC opens the HQ shared drive (SMB 445).","VLAN 20 access port.","Store firewall encrypts it into the IPsec tunnel to HQ.","HQ firewall decrypts and checks policy: store staff → file share is allowed.","Core routes it to VLAN 30, Servers.","NAS serves the file."]},
+ {t:"guest",name:"Guest Wi-Fi",sub:"Customer phone → internet only",color:C.guest,
+  nodes:s=>[s+"-guest",s+"-ap",s+"-sw",s+"-fw",s+"-modem","internet"],
+  notes:["Customer joins Corp-Guest.","AP tags guest traffic as VLAN 60 with client isolation on.","Tagged trunk to the firewall.","Policy: Guest → internet only. Blocked from POS, Staff and the VPN.","WAN1 to the ISP.","Public internet."]},
+ {t:"mon",name:"Monitoring heartbeat",sub:"Store firewall → monitoring platform",color:C.accent,
+  nodes:s=>[s+"-fw",s+"-modem","internet","rmm"],
+  notes:["Firewall reports status, WAN health and failover events every minute.","WAN1, or LTE if the store has failed over.","Public internet.","A missed heartbeat alerts IT before the store has to call."]}
+];
+["s1","s2","s3"].forEach(s=>STORE_FLOW_TYPES.forEach(ft=>F(s+"-"+ft.t,{name:ft.name,sub:ft.sub,color:ft.color,nodes:ft.nodes(s),notes:ft.notes,store:s,rt:true})));
+F("hq-teams",{name:"Teams meeting",sub:"Boardroom → Microsoft 365",color:C.av,rt:true,nodes:["hq-avbar","hq-avpc","hq-asw2","hq-core","hq-fw","hq-modem","internet","m365"],
+ notes:["Camera and mics send audio/video to the Teams Room over USB.","Teams Room encodes the call. Media uses UDP 3478–3481 for low delay.","Access port on VLAN 40, AV.","Core routes VLAN 40 to the firewall.","QoS gives Teams media priority. NAT to the public IP.","Fibre to the ISP.","Public internet.","Teams relays the call to the other people in the meeting."]});
+F("hq-m365",{name:"Mac → Microsoft 365",sub:"Wi-Fi user opening Outlook",color:C.staff,rt:true,nodes:["hq-mac1","hq-ap1","hq-asw1","hq-core","hq-fw","hq-modem","internet","m365"],
+ notes:["MacBook on the Corp-Staff SSID (WPA2/3-Enterprise).","AP maps the SSID to VLAN 20 and sends it up a tagged trunk.","Trunk port carries VLANs 20 and 60.","Routes between VLANs and sends internet traffic to the firewall.","Policy allows Staff → internet with web filtering. NAT.","Fibre to the ISP.","Public internet.","Entra ID checks MFA and conditional access, then Outlook syncs over HTTPS."]});
+F("hq-dns",{name:"DNS lookup",sub:"PC → internal DNS → public DNS",color:C.srv,rt:true,nodes:["hq-pc1","hq-asw1","hq-core","hq-srv","hq-core","hq-fw","hq-modem","internet","dns"],
+ notes:["PC asks “what is shopify.com?” on UDP 53.","Access port, VLAN 20.","Core routes the query to the Servers VLAN.","Internal DNS answers HQ names itself and forwards the rest.","Forwarded query heads out.","Firewall lets only the DNS server send DNS to the internet.","Fibre to the ISP.","Public internet.","Resolver returns the IP. The answer goes back to the PC."]});
+F("hq-print",{name:"Print from a Mac",sub:"Same VLAN, no firewall hop",color:C.staff,rt:false,nodes:["hq-mac2","hq-ap1","hq-asw1","hq-printer"],
+ notes:["macOS sends the job over IPP (port 631).","Wi-Fi to VLAN 20.","Same VLAN, so the switch delivers it directly.","Printer’s reservation keeps its IP fixed, so the Mac always finds it."]});
+F("hq-mdm",{name:"Mac checks in with MDM",sub:"Apps and security policies pushed down",color:C.accent,rt:true,nodes:["hq-mac1","hq-ap1","hq-asw1","hq-core","hq-fw","hq-modem","internet","rmm"],
+ notes:["The Mac checks in with MDM every few hours.","Wi-Fi to VLAN 20.","Trunk uplink to the core.","Routes to the firewall.","NAT out to the internet.","Fibre to the ISP.","Public internet.","MDM sends back apps, settings, FileVault and password policies (cyan reply)."]});
+F("hq-backup",{name:"Nightly off-site backup",sub:"NAS → cloud (3-2-1 rule)",color:0x7dd3c0,rt:false,nodes:["hq-nas","hq-core","hq-fw","hq-modem","internet","backup"],
+ notes:["NAS starts its encrypted nightly backup after hours.","Routes out of the Servers VLAN.","Policy allows only the NAS to reach the backup service.","Fibre to the ISP.","Public internet.","Off-site copy, restore-tested every quarter."]});
+const HQ_FLOWS=["hq-teams","hq-m365","hq-mdm","hq-dns","hq-print","hq-backup"];
+
+/* ---------- the job description, mapped ---------- */
+const ROLE=[
+ {t:"First point of contact for HQ",jd:"Resolve hardware, software and network issues for HQ employees, remotely and in person.",where:"HQ desks: Windows PCs, MacBooks, the printer.",nodes:["hq-pc1","hq-pc2","hq-mac1","hq-mac2","hq-printer"],view:"hq",
+  do:["Log every request and triage by impact: an outage beats one user","Fix remotely first; walk over when hands-on is faster","Turn repeat issues into an SOP"],drill:"dns"},
+ {t:"Inventory and documentation",jd:"Keep IT hardware and software inventory current; document systems, network configs and support procedures.",where:"Docs tab: inventory, IP plan, DR targets, runbooks. This model is the network diagram.",nodes:null,view:"overview",
+  do:["Record serial, owner, location and warranty at intake","Update diagrams and the IP plan after every change","Runbooks for repeat work: onboarding, store installs, upgrades"],tab:"docs"},
+ {t:"Accounts and access control",jd:"Create, manage and disable user accounts with appropriate access controls.",where:"Microsoft 365 + Entra ID, and every staff device that signs in to it.",nodes:["m365","hq-mac1","hq-pc1","s1-pc"],view:"cloud",
+  do:["Onboarding: account, licences, role-based groups, MFA, laptop ready on day one","Offboarding: disable, revoke sessions, remove app access, recover the device","Quarterly access reviews for least privilege"],drill:"phish"},
+ {t:"Network monitoring and maintenance",jd:"Monitor and troubleshoot network performance, do routine maintenance, install and configure hardware and software.",where:"Monitoring + MDM in the cloud, heartbeats from every store firewall, switches and APs.",nodes:["rmm","hq-core","hq-asw1","hq-asw2","hq-ap1","hq-ap2","s1-fw","s2-fw","s3-fw"],view:"overview",flow:"s1-mon",
+  do:["Alerts for device down, WAN failover, high CPU, DHCP scope over 80%","Monthly patch and firmware window after hours","Deploy apps and settings through MDM, not by hand"],drill:"loop"},
+ {t:"Security policy and training",jd:"Educate employees on IT security policies; train staff on new systems and tools.",where:"Every staff device. The phishing drill starts on a design MacBook.",nodes:["hq-mac1","hq-mac2","hq-pc1","hq-pc2"],view:"hq",
+  do:["Short security briefing in every onboarding","Phishing simulations with a quick, blame-free follow-up","One-page guides whenever a new tool rolls out"],drill:"phish"},
+ {t:"Projects, testing and disaster recovery",jd:"Join IT projects, test and deploy new solutions, help develop IT policies and disaster recovery.",where:"NAS with nightly off-site backup; LTE failover at every store.",nodes:["hq-nas","backup","s1-lte","s2-lte","s3-lte"],view:"hq",flow:"hq-backup",
+  do:["Pilot with a small group before company-wide rollout","3-2-1 backups and a restore test every quarter","RTO and RPO per system (Docs tab)"],tab:"docs"},
+ {t:"Connectivity for 23 stores",jd:"Keep all 23 stores connected, troubleshoot local outages, and help deploy store hardware.",where:"The store template: cable + LTE, SD-WAN firewall, PoE switch, AP, POS.",nodes:["s2-modem","s2-lte","s2-fw","s2-sw","s2-ap"],view:"s2",flow:"s2-pay",
+  do:["Triage remotely: scope, monitoring, modem lights, then the ISP","Keep the store selling first (LTE, backup procedure)","Pre-stage and test store kits at HQ before install day"],drill:"isp"},
+ {t:"HQ connectivity and upgrades",jd:"Troubleshoot complex office connectivity and take part in scheduled network hardware and routing upgrades.",where:"HQ comms room: ONT, firewall HA pair, core and access switches, VPN to every store.",nodes:["hq-modem","hq-fw","hq-core","hq-asw1","hq-asw2"],view:"hq",
+  do:["Change plan with config backups and a rollback","Work after hours and warn users first","Test every VPN tunnel and key app after the change"],drill:"vpn"},
+ {t:"Evaluating new software",jd:"Partner with business departments on new software and make sure it meets security policy and best practice.",where:"The cloud services. Each new one is another login and another path for data to leave.",nodes:["shopify","m365","backup","rmm"],view:"cloud",
+  do:["SSO + MFA, data location, SOC 2 report, admin roles","Can access be removed when someone leaves?","Does it duplicate something we already pay for?"],tab:"docs"},
+ {t:"Vulnerability monitoring and hardening",jd:"Monitor the HQ network for vulnerabilities; recommend and implement security improvements.",where:"Firewall policies, VLAN segmentation, guest isolation, the unmanaged desk switch.",nodes:["hq-fw","hq-core","hq-desksw","s1-guest","s1-fw"],view:"hq",flow:"s1-guest",
+  do:["Monthly vulnerability scan; patch by risk","Keep POS, staff, guest, cameras and AV on separate VLANs","BPDU guard, MFA number matching, block external auto-forwarding"],drill:"loop"},
+ {t:"AV and conferencing",jd:"Familiarity with microphones, speakers, projectors and conferencing tools.",where:"Boardroom: Teams Room, display, camera and mic bar.",nodes:["hq-avpc","hq-display","hq-avbar"],view:"hq",flow:"hq-teams",
+  do:["Check meeting rooms each morning before exec meetings","Lock display inputs and label cables","Keep a laptop fallback ready"],drill:"av"},
+ {t:"Shopify",jd:"Experience with Shopify is highly desirable.",where:"POS registers, card readers, Shopify admin and Payments.",nodes:["s1-pos1","s1-pos2","s1-rdr1","s1-rdr2","shopify","pay"],view:"s1",flow:"s1-pay",
+  do:["Staff accounts and POS permissions in Shopify admin","Reader pairing and a spare reader per store","Tell a network problem from a POS problem in the first minute"],drill:"reader"}
+];
+
+/* ---------- guided tour ---------- */
+const TOUR=[
+ {view:"overview",title:"One HQ, 23 stores, the cloud",text:"Every store runs the same template, so these three stand in for all 23. Most business systems are cloud services: Shopify, Microsoft 365, backup and monitoring."},
+ {view:"hq",nodes:["hq-modem","hq-fw","hq-core","hq-asw1","hq-asw2"],title:"HQ backbone",text:"Fibre into a firewall pair, a Layer 3 core, then access switches. Staff, servers, AV and guest each get their own VLAN."},
+ {view:"s1",nodes:["s1-modem","s1-lte","s1-fw","s1-sw","s1-ap","s1-pos1","s1-pos2","s1-cam"],title:"The store template",text:"Two internet paths (cable and LTE), an SD-WAN firewall, a PoE switch, two Shopify POS registers, Wi-Fi and a camera."},
+ {view:"s1",flow:"s1-pay",title:"A card payment",text:"Reader → iPad over Bluetooth → POS VLAN → firewall → Shopify Payments. The POS VLAN can reach Shopify and nothing else, which keeps PCI scope small."},
+ {view:"s2",flow:"s2-pay",temp:{"s2-modem":"down"},title:"When the cable line drops",text:"SD-WAN moves payments to LTE in seconds, so the store keeps selling. Monitoring alerts me before the store has to call."},
+ {view:"overview",flow:"s1-hq",title:"Stores to HQ",text:"Each store has an encrypted IPsec tunnel to HQ for the file share and back-office tools. Payments never use the tunnel."},
+ {view:"cloud",nodes:["m365","rmm","hq-fw"],flow:"hq-mdm",title:"Identity, devices and security",text:"Entra ID handles sign-in, MFA and access. MDM pushes apps and security policies. The firewall enforces who can talk to whom."},
+ {view:"hq",flow:"hq-backup",title:"Disaster recovery",text:"The NAS backs up off-site every night (3-2-1) and gets a restore test every quarter. Targets for each system are in the Docs tab."},
+ {view:"overview",title:"How I’d support it",text:"The Incidents tab has nine realistic tickets for this environment, from a store offline to a phishing click. Pick one and I’ll walk through it.",end:"incidents"}
+];
+
+/* ---------- incidents ---------- */
+const SCEN=[
+ {id:"isp",sev:"p1",site:"s2",title:"“Nothing works, we can’t take payments”",sub:"Store 12 · sales stopped",
+  caller:"Store 12 manager",time:"Sat 11:04",msg:"Nothing works. Both registers say no internet and there’s a line of customers. Can you fix it?",
+  apply:{nodes:{"s2-modem":"down","s2-lte":"down"},links:[["s2-modem","internet"]]},focus:["s2-pay","s2-sync","s2-guest","s2-hq"],
+  checks:[
+   {q:"Check the monitoring dashboard",a:"Store 12 firewall stopped checking in at 10:52.\nStore 01 and Store 23 are online.\n→ Only this store is affected.",tag:"clue"},
+   {q:"Ask staff to load a website on a phone on store Wi-Fi",a:"Phone shows full Wi-Fi bars but “No internet connection”.\n→ It’s not just the registers.",tag:"clue"},
+   {q:"Have staff read the modem lights",a:"Power: solid. DS / US: flashing. Online: OFF.\n→ The modem can’t lock onto the ISP signal.",tag:"clue"},
+   {q:"Check why LTE failover didn’t take over",a:"Firewall: WAN2 (LTE) “no link”.\nLTE router signal LED is off. The SIM was never activated after the install.",tag:"clue"},
+   {q:"Call the ISP / check their status page",a:"ISP confirms a cable outage in the area. Estimated restore: 3 hours.",tag:"clue"},
+   {q:"Restart the Shopify POS app on both iPads",a:"No change. The app still can’t reach Shopify. Restarting an app can’t fix a missing internet connection.",tag:"miss"},
+   {q:"Reboot the store PoE switch",a:"Registers, AP and camera lose power for 2 minutes and come back with the same problem. Don’t reboot things blindly during trading hours.",tag:"risk"}],
+  opts:["ISP outage, and the LTE backup isn’t working (SIM never activated)","Shopify is down","The PoE switch failed","Both iPads need an iOS update"],ans:0,
+  hint:"Other stores are fine and the phone on Wi-Fi has no internet either. Look at what connects this one store to the ISP.",
+  fix:["Tell the manager what’s happening and the ETA. Switch registers to the store’s backup procedure (cash, or offline payments if enabled) so sales continue.","Open an ISP ticket; note the ticket number and ETA.","Activate the LTE SIM with the carrier and confirm the firewall fails over to WAN2.","Payments now run over LTE. Fail back once the ISP restores."],
+  prevent:["Monitor WAN2 health so a dead backup alerts before you need it","Test failover at every store quarterly (pull WAN1 after close)","Add “activate and test LTE” to the new-store install checklist"],
+  say:"I checked scope first, kept the store selling, proved it was the ISP from the modem lights, then fixed the backup so it doesn’t happen twice.",
+  after:{nodes:{"s2-lte":"ok"}},afterNote:"The ISP is still down, but Store 12 is now selling over LTE. Watch the payment packets take the cellular path."},
+ {id:"reader",sev:"p2",site:"s1",title:"“Register 2 says the card reader isn’t connected”",sub:"Store 01 · one register down",
+  caller:"Store 01 cashier",time:"Tue 10:12",msg:"Register 2 says the card reader isn’t connected. Register 1 is working fine.",
+  apply:{nodes:{"s1-rdr2":"warn"},links:[["s1-rdr2","s1-pos2"]]},focus:["s1-pay","s1-sync"],extraFlows:[["s1-rdr2","s1-pos2","s1-sw","s1-fw","s1-modem","internet","pay"]],
+  checks:[
+   {q:"Check monitoring for Store 01",a:"All Store 01 devices online. Register 1 took a payment 1 minute ago.\n→ The store network is healthy.",tag:"clue"},
+   {q:"Ask the cashier to open a website on register 2",a:"Loads fine. Register 2 has internet.\n→ Not a network problem.",tag:"clue"},
+   {q:"POS app → Settings → Hardware on register 2",a:"Card reader: Not connected.\nLast connected yesterday 6:40 pm, before an iPadOS update installed overnight.",tag:"clue"},
+   {q:"Look at the reader’s light and battery",a:"Battery 70%. Light blinking: the reader is waiting to pair.",tag:"clue"},
+   {q:"Check the Shopify status page",a:"All systems operational. Good habit, but register 1 working had already ruled this out.",tag:"miss"},
+   {q:"Reboot the store modem and firewall",a:"Both registers go offline for 4 minutes, including the working one. Didn’t help. One broken register just became two.",tag:"risk"}],
+  opts:["The card reader lost its Bluetooth pairing after the iPad updated","Store internet is down","Register 2 is on the wrong VLAN","Shopify Payments outage"],ans:0,
+  hint:"Register 2 can load websites, and register 1 is taking payments. What’s different about register 2?",
+  fix:["In Shopify POS: Settings → Hardware → connect the card reader and re-pair it","Run a small test transaction","Still failing: forget it in iPad Bluetooth settings, power-cycle the reader and pair again, or swap in the spare"],
+  prevent:["Keep one charged spare reader per store","Schedule iPad updates after close and test the reader in the morning","Add “re-pair the reader” to the store quick-fix guide so staff can self-serve"],
+  say:"One register worked, so the network was fine. Scope narrowed it to one device in two minutes, without rebooting anything the other register depends on."},
+ {id:"dhcp",sev:"p2",site:"s3",title:"“New laptop connects but nothing loads”",sub:"Store 23 · new devices offline",
+  caller:"Store 23 manager",time:"Mon 09:30",msg:"The back-office PC stopped working after a restart, and the new laptop connects but nothing loads. Registers and phones are fine.",
+  apply:{nodes:{"s3-pc":"down"}},focus:["s3-hq","s3-pay"],
+  checks:[
+   {q:"Run ipconfig /all on the back-office PC",a:"IPv4 Address: 169.254.88.14\nDefault Gateway: (blank)\n→ The PC didn’t get an address from DHCP.",tag:"clue"},
+   {q:"Check the cable and switch port lights",a:"Link light on, port 6 up at 1 Gbps.\n→ The physical connection is fine.",tag:"clue"},
+   {q:"Check the DHCP lease table on the store firewall",a:"VLAN 20 scope 10.23.20.100–.129: 30 of 30 addresses leased.\n19 leases belong to devices not seen in over a week. Lease time: 7 days.",tag:"clue"},
+   {q:"Check why the registers still work",a:"POS VLAN 10 has its own scope with reservations, so registers are unaffected.",tag:"clue"},
+   {q:"Reinstall the PC’s network driver",a:"Takes 20 minutes and changes nothing. The network card works; there’s just no address to hand it.",tag:"miss"}],
+  opts:["The Staff VLAN DHCP scope is full","Bad Ethernet cable","DNS server is down","ISP outage"],ans:0,
+  hint:"169.254 means the device asked for an address and nobody gave it one. Devices that already had a lease are fine.",
+  fix:["Clear the stale leases","On the PC: ipconfig /release then ipconfig /renew. It gets a 10.23.20.x address","Expand the scope (e.g. .100–.199) and shorten the lease to 1 day"],
+  prevent:["Alert when any scope passes 80% used","Put personal and vendor devices on Guest Wi-Fi, not Staff","Record every store’s scopes in the IP plan"],
+  say:"169.254 meant DHCP failed. Old devices still had leases and new ones couldn’t get one, so I went straight to the scope."},
+ {id:"dns",sev:"p1",site:"hq",title:"“Websites won’t load, but my Teams call didn’t drop”",sub:"HQ · five tickets in 3 minutes",
+  caller:"Several HQ staff",time:"Wed 08:47",msg:"Websites and the Shopify admin won’t load, but my Teams call is still going. Is the internet down?",
+  apply:{nodes:{"hq-srv":"down"}},focus:["hq-dns","hq-m365"],
+  checks:[
+   {q:"ping 1.1.1.1 from a user’s PC",a:"Reply from 1.1.1.1: bytes=32 time=9ms TTL=58\n→ Internet connectivity is fine.",tag:"clue"},
+   {q:"ping shopify.com",a:"Ping request could not find host shopify.com.",tag:"clue"},
+   {q:"nslookup shopify.com",a:"DNS request timed out.\nServer: 10.0.30.10",tag:"clue"},
+   {q:"ipconfig /all: which DNS servers?",a:"DNS Servers: 10.0.30.10\n(no secondary)",tag:"clue"},
+   {q:"Check the infra server",a:"Server is up, but the DNS Server service is stopped. It failed to start after last night’s Windows Update reboot.",tag:"clue"},
+   {q:"Reboot the HQ firewall",a:"Everyone drops off Teams for 3 minutes. Websites still don’t load afterwards.",tag:"risk"}],
+  opts:["DNS service stopped on the infra server, and DHCP hands out only that one DNS server","ISP outage","Microsoft 365 outage","Wi-Fi interference"],ans:0,
+  hint:"Pinging an IP works, pinging a name doesn’t. Which service turns names into IPs?",
+  fix:["Start the DNS Server service and confirm nslookup resolves","Users retry, or run ipconfig /flushdns","Set the service to restart automatically on failure"],
+  prevent:["Hand out two DNS servers through DHCP","Monitor the DNS service, not just whether the server is up","Check critical services after patch-night reboots"],
+  say:"It worked by IP and failed by name, so it was DNS. nslookup told me which server, and the server told me why."},
+ {id:"av",sev:"p1",site:"hq",title:"“Boardroom screen says No Signal”",sub:"HQ · exec meeting in 5 minutes",
+  caller:"Executive assistant",time:"Thu 13:55",msg:"The boardroom screen says No Signal and the CEO’s meeting starts in 5 minutes!",
+  apply:{nodes:{"hq-display":"warn"},links:[["hq-avpc","hq-display"]]},focus:["hq-teams"],
+  checks:[
+   {q:"Check the Teams Room in the admin center",a:"Teams Room is online and signed in. Camera and mic bar healthy.\n→ Network and account are fine.",tag:"clue"},
+   {q:"Look at the display’s input",a:"Display is on HDMI 2. The Teams Room is plugged into HDMI 1. Someone presented from a laptop earlier and left it on HDMI 2.",tag:"clue"},
+   {q:"Check the HDMI cable at both ends",a:"Seated at the display; slightly loose at the Teams Room end.",tag:"clue"},
+   {q:"Restart the Teams Room",a:"Takes 4 minutes to boot. Screen is still on the wrong input.",tag:"miss"},
+   {q:"Restart the boardroom network switch",a:"Teams Room goes offline for 3 minutes. Screen still says No Signal. Now you have 2 minutes left.",tag:"risk"}],
+  opts:["Display on the wrong input, plus a loose HDMI cable","Network outage in the boardroom","Teams Room account locked","Projector bulb failure"],ans:0,
+  hint:"The Teams Room is online and healthy. The problem is between it and the screen.",
+  fix:["Switch the display to HDMI 1 and reseat the cable","Join a test meeting to check screen, camera and mic","Stay until the meeting starts. Backup: run it from a laptop with the USB bar"],
+  prevent:["Turn on HDMI-CEC / auto input switching, or lock the input","Label cables and ports at both ends","Check VIP rooms each morning before exec meetings"],
+  say:"With five minutes, I checked the simplest physical thing first, and I always have a fallback for a VIP meeting."},
+ {id:"phish",sev:"p1",site:"hq",title:"“I entered my password on a link, then approved an MFA prompt”",sub:"HQ · security incident",
+  caller:"Design team member",time:"Fri 09:20",msg:"I clicked a link in an email about a shared invoice and typed my password. Then I got two MFA prompts and approved one by accident.",
+  apply:{nodes:{"hq-mac2":"down"}},focus:["hq-m365"],bad:[["hq-mac2","hq-ap1","hq-asw1","hq-core","hq-fw","hq-modem","internet"]],
+  checks:[
+   {q:"Check Defender / EDR alerts for this Mac",a:"Alert 09:14: credential-phishing site visited.\nNo malware executed on the device.",tag:"clue"},
+   {q:"Check Entra ID sign-in logs",a:"09:16 successful sign-in from an unfamiliar country.\nMFA satisfied by push approval.",tag:"clue"},
+   {q:"Check the mailbox for new inbox rules",a:"New rule created 09:18: forward emails containing “invoice” or “payment” to an external address.",tag:"clue"},
+   {q:"Search for the same email in other mailboxes",a:"Sent to 38 staff. 2 others clicked; neither entered a password.",tag:"clue"},
+   {q:"Tell the user to change their password later today",a:"The attacker still holds an active session token. A password change alone doesn’t sign them out.",tag:"risk"}],
+  opts:["Account compromised through phishing and MFA fatigue; attacker set up mail forwarding","The Mac has a virus","Only a spam filter setting","No action needed, MFA protected the account"],ans:0,
+  hint:"Look at the sign-in log and what changed in the mailbox after the click.",
+  fix:["Revoke all sessions, reset the password, re-register MFA","Delete the forwarding rule and review what was forwarded","Isolate the Mac in EDR while it’s scanned","Purge the email from all 38 mailboxes; block the sender and URL","Thank the user for reporting fast; follow up with the two who clicked"],
+  prevent:["Turn on MFA number matching","Block auto-forwarding to external domains","Short phishing refresher using this real example (no names)"],
+  say:"Contain first: sessions, password, rule. Then scope it, then educate. Fast reporting should feel safe."},
+ {id:"loop",sev:"p1",site:"hq",title:"“Everything is crawling, Teams keeps freezing”",sub:"HQ · open office slowing to a halt",
+  caller:"Several HQ staff",time:"Tue 14:12",msg:"Everything is crawling, Teams keeps freezing, and now some of us can’t connect at all.",
+  apply:{nodes:{"hq-asw1":"storm","hq-desksw":"warn"},loop:true},focus:["hq-m365","hq-dns","hq-print"],
+  checks:[
+   {q:"Check who is affected",a:"Only users on the open-office switch (wired and Wi-Fi). The boardroom on the other switch is fine.",tag:"clue"},
+   {q:"Check the open-office switch dashboard",a:"CPU 100%. Broadcast traffic on ports 14 and 22 is huge and climbing.",tag:"clue"},
+   {q:"Trace ports 14 and 22",a:"Both go to the same desk. A small unmanaged switch installed today for a new hire has two cables to the wall, creating a loop.",tag:"clue"},
+   {q:"Check the firewall and ISP",a:"WAN normal, firewall CPU normal.\n→ Not an internet problem.",tag:"clue"},
+   {q:"Reboot the core switch",a:"All of HQ drops for 5 minutes. The storm comes straight back when it boots.",tag:"risk"}],
+  opts:["A switching loop from the desk switch is causing a broadcast storm","ISP outage","DNS failure","DHCP scope full"],ans:0,
+  hint:"One switch, 100% CPU, broadcast traffic climbing on two ports that lead to the same desk.",
+  fix:["Unplug the second cable from the desk switch","Watch switch CPU and broadcasts drop to normal","Confirm Teams and connectivity recover"],
+  prevent:["Spanning Tree with BPDU Guard and loop protection on every access port","Storm control to cap broadcast traffic","No unmanaged switches; patch extra ports properly"],
+  say:"Scope pointed to one switch, the switch showed a broadcast storm, the ports led me to the loop. Then I made sure it can’t happen again."},
+ {id:"central",sev:"p1",site:"all",title:"“Cards keep failing” from three stores at once",sub:"All stores · payments failing",
+  caller:"Stores 01, 12 and 23",time:"Sat 15:46",msg:"Cards keep failing with a processing error. (Three stores called within four minutes.)",
+  apply:{nodes:{"pay":"down"}},focus:["s1-pay","s2-pay","s3-pay"],
+  checks:[
+   {q:"Check monitoring for every store",a:"All 23 store firewalls online. Internet and VPN tunnels up everywhere.",tag:"clue"},
+   {q:"Ask one store to load a website",a:"Works fine. Store internet is healthy.",tag:"clue"},
+   {q:"Check the Shopify status page",a:"Shopify Payments: degraded performance, investigating. Started 15:42.",tag:"clue"},
+   {q:"Remote into Store 01 and reboot its firewall",a:"Store 01 goes fully offline for 4 minutes, and payments still fail afterwards.",tag:"risk"}],
+  opts:["Upstream outage at the payment processor","Every store’s ISP failed at once","HQ firewall down","Card readers need a firmware update"],ans:0,
+  hint:"When many sites fail at the same moment, look for the one thing they all share.",
+  fix:["Send one message to all stores: known payment outage, use the backup procedure, don’t restart equipment","Watch the status page and update stores every 15–30 minutes","Test a transaction when it recovers, then send the all-clear"],
+  prevent:["Keep a pre-written store outage message ready","Make sure every store knows the backup payment procedure","Subscribe IT to Shopify status alerts"],
+  say:"When many sites fail together, I look for what they share. Communicating fast mattered more than touching any device."},
+ {id:"vpn",sev:"p3",site:"s1",title:"“We can sell, but can’t open the HQ shared drive”",sub:"Store 01 · tunnel to HQ down",
+  caller:"Store 01 manager",time:"Wed 08:15",msg:"Registers are fine, but the back-office PC can’t open the shared drive or the HQ schedule since this morning.",
+  apply:{links:[["s1-fw","hq-fw"]]},focus:["s1-hq","s1-pay"],
+  checks:[
+   {q:"Check payments and internet at Store 01",a:"Payments working, internet fine. Only HQ resources fail.",tag:"clue"},
+   {q:"ping 10.0.30.20 (HQ NAS) from the back-office PC",a:"Request timed out.\nRequest timed out.",tag:"clue"},
+   {q:"Check VPN status on both firewalls",a:"Store 01 ↔ HQ: Phase 1 up, Phase 2 down.\nStore 12 and Store 23 tunnels: up.",tag:"clue"},
+   {q:"Check the change log",a:"HQ firewall firmware was upgraded last night. The new version changed its default encryption proposals. Store 01 still runs older firmware.",tag:"clue"},
+   {q:"Remap the shared drive on the PC",a:"Doesn’t help. The PC can’t reach HQ at all.",tag:"miss"}],
+  opts:["Site-to-site VPN Phase 2 mismatch after the HQ firmware upgrade","Store 01 ISP outage","The NAS is down","The user’s password expired"],ans:0,
+  hint:"It worked yesterday. What changed overnight, and why would only one store’s tunnel break?",
+  fix:["Match the Phase 2 encryption settings on both firewalls","Bring the tunnel up and confirm ping to 10.0.30.20","Have the store open the shared drive"],
+  prevent:["Add “check every VPN tunnel” to the upgrade test plan","Keep store firmware versions consistent","Alert when any tunnel is down for over 5 minutes"],
+  say:"It worked yesterday, so I asked what changed. The change log pointed to the upgrade, and only the store on old firmware broke."}
+];
+
+/* ---------- three.js setup ---------- */
+const canvas=$("#c"),stage=$("#stage"),labelLayer=$("#labels");
+const renderer=new THREE.WebGLRenderer({canvas,antialias:true});
+renderer.setPixelRatio(Math.min(window.devicePixelRatio||1,2));
+const scene=new THREE.Scene();
+scene.background=new THREE.Color(0x0b111c);
+scene.fog=new THREE.Fog(0x0b111c,70,140);
+const camera=new THREE.PerspectiveCamera(45,1,0.1,400);
+camera.position.set(-3,30,40);
+const controls=new THREE.OrbitControls(camera,canvas);
+controls.target.set(-3,2,0);controls.enableDamping=true;controls.dampingFactor=0.08;
+controls.maxPolarAngle=Math.PI*0.48;controls.minDistance=5;controls.maxDistance=95;
+scene.add(new THREE.HemisphereLight(0xd6e2ff,0x18202e,0.85));
+const dl=new THREE.DirectionalLight(0xffffff,0.75);dl.position.set(-12,30,22);scene.add(dl);
+const grid=new THREE.GridHelper(140,70,0x1a2840,0x121c2c);grid.position.y=-0.32;scene.add(grid);
+
+const mat=(c,o)=>new THREE.MeshStandardMaterial(Object.assign({color:c,roughness:0.6,metalness:0.12},o||{}));
+const BODY=0x2b3852,BODY2=0x3a4a68,SILVER=0xbac4d2,SCREEN=0x0f1726;
+function mesh(geo,m,x,y,z,g){const o=new THREE.Mesh(geo,m);o.position.set(x||0,y||0,z||0);if(g)g.add(o);return o;}
+const box=(w,h,d)=>new THREE.BoxGeometry(w,h,d);
+const cylG=(a,b,h,s)=>new THREE.CylinderGeometry(a,b,h,s||16);
+
+/* platforms + zones */
+const zoneLabels=[];
+function zone(site,x0,z0,x1,z1,label,color){
+  const S=SITES[site];const w=x1-x0,d=z1-z0;
+  const p=mesh(new THREE.PlaneGeometry(w,d),new THREE.MeshBasicMaterial({color,transparent:true,opacity:0.07,depthWrite:false}),S.x+x0+w/2,0.012,S.z+z0+d/2,scene);
+  p.rotation.x=-Math.PI/2;
+  const el=document.createElement("div");el.className="zone-lbl";el.textContent=label;labelLayer.appendChild(el);
+  zoneLabels.push({el,v:new THREE.Vector3(S.x+x0+0.35,0.05,S.z+z1-0.35)});
+}
+const siteLabels=[];
+Object.entries(SITES).forEach(([id,S])=>{
+  const plat=mesh(box(S.w,0.3,S.d),mat(0x162033,{roughness:0.9}),S.x,-0.15,S.z,scene);
+  const edges=new THREE.LineSegments(new THREE.EdgesGeometry(plat.geometry),new THREE.LineBasicMaterial({color:0x33476a}));
+  edges.position.copy(plat.position);scene.add(edges);
+  const el=document.createElement("div");el.className="site-lbl";el.innerHTML=`${S.name}<small>${S.sub}</small>`;labelLayer.appendChild(el);
+  siteLabels.push({el,v:new THREE.Vector3(S.x,0,S.z+S.d/2+0.6)});
+});
+zone("hq",-10.5,-7.75,10.5,-1.3,"Comms room",0x8fb4ff);
+zone("hq",-10.5,-1.3,3.6,7.75,"Open office",0x5b9dff);
+zone("hq",3.6,-1.3,10.5,7.75,"Boardroom",0xff8a65);
+["s1","s2","s3"].forEach(s=>{zone(s,-5.5,-4.3,5.5,-0.2,"Back room",0x8fb4ff);zone(s,-5.5,-0.2,5.5,4.3,"Sales floor",0xf5c542);});
+// furniture
+const deskM=mat(0x2a303d);
+(function(){const S=SITES.hq;mesh(box(2.8,0.74,1.5),deskM,S.x+6.2,0.37,S.z+4,scene);mesh(box(1,0.74,0.55),deskM,S.x+9,0.37,S.z+3,scene);
+ [["hq-pc1"],["hq-pc2"],["hq-mac1"],["hq-mac2"]].forEach(([id])=>{const n=NMAP[id];mesh(box(1.6,0.06,0.9),deskM,S.x+n.rx,0.74,S.z+n.rz,scene);mesh(box(1.5,0.7,0.05),deskM,S.x+n.rx,0.36,S.z+n.rz-0.42,scene);});})();
+["s1","s2","s3"].forEach(s=>{const S=SITES[s];mesh(box(3.6,0.95,0.85),mat(0x3b3343),S.x-1.3,0.475,S.z+2.62,scene);mesh(box(1.4,0.74,0.7),deskM,S.x+3.7,0.37,S.z-2.7,scene);});
+
+/* device builders */
+function build(n){
+  const g=new THREE.Group();let top=1.3,port=1.0,led=null,screen=null;
+  const stand=(h,w,d)=>mesh(box(w||0.5,h,d||0.4),mat(0x1d2738),0,h/2,0,g);
+  switch(n.type){
+   case "modem":stand(0.9);mesh(box(0.7,0.22,0.5),mat(BODY2),0,1.01,0,g);led=[0.24,1.13,0.26];top=1.35;break;
+   case "lte":stand(0.9);mesh(box(0.6,0.2,0.45),mat(BODY2),0,1.0,0,g);[-0.2,0.2].forEach(x=>mesh(cylG(0.025,0.025,0.55),mat(0x8a96aa),x,1.37,-0.15,g));led=[0.2,1.11,0.23];top=1.75;break;
+   case "firewall":stand(0.9,0.7,0.5);mesh(box(1.3,0.28,0.75),mat(BODY),0,1.04,0,g);mesh(box(1.3,0.07,0.02),mat(0xd9484f,{emissive:0x3a0d10}),0,1.1,0.385,g);led=[0.52,1.19,0.3];top=1.5;port=1.04;break;
+   case "switch":case "l3switch":stand(0.9,0.8,0.5);mesh(box(1.7,0.2,0.65),mat(n.type==="l3switch"?0x34507a:BODY),0,1.0,0,g);for(let i=0;i<8;i++)mesh(box(0.13,0.07,0.02),mat(0x0a0f18),-0.6+i*0.15,1.0,0.33,g);led=[0.72,1.11,0.25];top=1.4;break;
+   case "minisw":mesh(box(0.45,0.12,0.3),mat(BODY2),0,0.06,0.2,g);led=[0.15,0.13,0.36];top=0.6;port=0.1;break;
+   case "server":mesh(box(0.8,1.5,0.85),mat(BODY),0,0.75,0,g);for(let i=0;i<4;i++)mesh(box(0.62,0.04,0.02),mat(0x55688a),0,0.4+i*0.24,0.43,g);led=[0.28,1.38,0.43];top=1.9;port=0.9;break;
+   case "nas":stand(0.5,0.6,0.5);mesh(box(0.75,0.6,0.7),mat(BODY2),0,0.8,0,g);for(let i=0;i<4;i++)mesh(box(0.14,0.45,0.02),mat(0x1a2333),-0.25+i*0.17,0.8,0.36,g);led=[0.3,1.05,0.36];top=1.4;port=0.8;break;
+   case "ap":mesh(cylG(0.025,0.025,2.5),mat(0x3a475e),0,1.25,0,g);mesh(cylG(0.38,0.38,0.08,32),mat(0xe9eef5),0,2.55,0,g);led=[0,2.5,0.3];top=3.0;port=2.55;break;
+   case "pc":mesh(box(0.9,0.55,0.05),mat(0x1b2333),0,1.15,-0.12,g);screen=mesh(box(0.82,0.47,0.01),mat(SCREEN,{emissive:0x1d3a66,emissiveIntensity:0.7}),0,1.15,-0.09,g);mesh(box(0.08,0.25,0.08),mat(0x1b2333),0,0.88,-0.15,g);mesh(box(0.25,0.5,0.5),mat(BODY2),0.62,1.02,0,g);led=[0.62,1.22,0.26];top=1.65;port=0.85;break;
+   case "mac":mesh(box(0.75,0.035,0.52),mat(SILVER,{metalness:0.55}),0,0.8,0.05,g);const sc=mesh(box(0.75,0.5,0.025),mat(SILVER,{metalness:0.55}),0,1.04,-0.21,g);sc.rotation.x=-0.22;screen=mesh(box(0.68,0.43,0.005),mat(SCREEN,{emissive:0x1d3a66,emissiveIntensity:0.7}),0,1.04,-0.195,g);screen.rotation.x=-0.22;led=[0.3,0.83,0.3];top=1.55;port=0.9;break;
+   case "printer":mesh(box(0.8,0.55,0.65),mat(0xc9d1dc),0,0.275,0,g);mesh(box(0.6,0.05,0.3),mat(0x8a96aa),0,0.58,0.1,g);led=[0.3,0.5,0.33];top=1.0;port=0.45;break;
+   case "avpc":mesh(box(0.35,0.12,0.35),mat(BODY2),0,0.8,0,g);led=[0.12,0.87,0.18];top=1.2;port=0.8;break;
+   case "display":mesh(box(0.15,1.0,0.15),mat(0x1b2333),0,0.5,0,g);mesh(box(2.4,1.4,0.08),mat(0x10151f),0,1.7,0,g);screen=mesh(box(2.3,1.3,0.01),mat(SCREEN,{emissive:0x2a5aa8,emissiveIntensity:0.75}),0,1.7,-0.045,g);led=[1.1,1.05,-0.05];top=2.7;port=1.0;break;
+   case "avbar":mesh(box(1.0,0.12,0.14),mat(0x1b2333),0,2.5,0,g);const lens=mesh(cylG(0.05,0.05,0.03),mat(0x050608),0,2.5,-0.08,g);lens.rotation.x=Math.PI/2;led=[0.4,2.5,-0.08];top=2.95;port=2.5;break;
+   case "pos":mesh(cylG(0.04,0.06,0.25),mat(0x8a96aa),0,1.07,0,g);const ip=mesh(box(0.55,0.4,0.035),mat(0x1b2333),0,1.35,0,g);ip.rotation.x=-0.5;screen=mesh(box(0.5,0.35,0.005),mat(SCREEN,{emissive:0x5a4a12,emissiveIntensity:0.8}),0,1.36,0.02,g);screen.rotation.x=-0.5;led=[0.22,1.2,0.12];top=1.85;port=1.1;break;
+   case "reader":mesh(box(0.18,0.06,0.3),mat(0x222a38),0,0.98,0,g);led=[0,1.02,0.1];top=1.4;port=1.0;break;
+   case "camera":mesh(cylG(0.03,0.03,2.3),mat(0x3a475e),0,1.15,0,g);const cb=mesh(cylG(0.12,0.14,0.4),mat(0xe9eef5),0,2.35,-0.1,g);cb.rotation.x=Math.PI/2.4;led=[0,2.47,0];top=2.9;port=2.3;break;
+   case "phone":mesh(box(0.16,0.32,0.02),mat(0x111827),0,1.3,0,g);screen=mesh(box(0.14,0.28,0.005),mat(SCREEN,{emissive:0x4a3a7a,emissiveIntensity:0.8}),0,1.3,0.012,g);led=[0,1.48,0.02];top=1.8;port=1.3;break;
+   case "cloud":mesh(new THREE.SphereGeometry(1.15,32,20),mat(0x1c3a66,{emissive:0x12305e,emissiveIntensity:0.7}),0,0,0,g);mesh(new THREE.IcosahedronGeometry(1.75,1),new THREE.MeshBasicMaterial({color:0x6f8fc4,wireframe:true,transparent:true,opacity:0.35}),0,0,0,g);top=2.1;port=0;break;
+   case "service":mesh(new THREE.OctahedronGeometry(0.7),mat(n.col,{emissive:n.col,emissiveIntensity:0.25}),0,0,0,g);top=1.2;port=0;break;
+  }
+  return {g,top,port,led,screen};
+}
+
+/* place nodes */
+const pickables=[];
+NODES.forEach(n=>{
+  const b=build(n);const S=n.site?SITES[n.site]:null;
+  n.pos=S?new THREE.Vector3(S.x+n.rx,0,S.z+n.rz):new THREE.Vector3(n.rx,n.y,n.rz);
+  b.g.position.copy(n.pos);if(n.type==="display"||n.type==="avbar"){b.g.rotation.y=0;}
+  scene.add(b.g);
+  n.g=b.g;n.top=b.top;n.port=n.pos.clone().add(new THREE.Vector3(0,b.port,0));n.screen=b.screen;
+  n.mats=[];b.g.traverse(o=>{if(o.isMesh&&o.material&&o.material.isMeshStandardMaterial){n.mats.push(o.material);o.material.userData.e0=o.material.emissive.getHex();o.material.userData.ei0=o.material.emissiveIntensity;}o.userData.node=n.id;pickables.push(o);});
+  if(b.led){n.led=mesh(new THREE.SphereGeometry(0.045,10,8),new THREE.MeshBasicMaterial({color:C.ok}),b.led[0],b.led[1],b.led[2],b.g);}
+  const r=n.type==="cloud"?2.4:n.type==="service"?1.15:0.85;
+  const halo=mesh(new THREE.RingGeometry(r,r+0.12,48),new THREE.MeshBasicMaterial({color:C.accent,transparent:true,opacity:0,side:THREE.DoubleSide,depthWrite:false}),0,n.site?0.03:-0.2,0,b.g);
+  halo.rotation.x=-Math.PI/2;n.halo=halo;
+  const el=document.createElement("div");el.className="lbl"+(n.site?"":" cloud");el.textContent=n.name;el.hidden=true;labelLayer.appendChild(el);n.el=el;
+});
+
+/* links */
+function curveFor(l){
+  const A=NMAP[l.a],B=NMAP[l.b];const a=A.port.clone(),b=B.port.clone();const m=a.clone().add(b).multiplyScalar(0.5);const d=a.distanceTo(b);
+  if(l.kind==="vpn"){m.y=Math.max(a.y,b.y)+d*0.22+2.5;}
+  else if(l.kind==="wan"||l.kind==="cell"){m.y=Math.max(a.y,b.y)+d*0.1;}
+  else{m.y=Math.max(a.y,b.y)+Math.min(0.7,d*0.09);}
+  return new THREE.QuadraticBezierCurve3(a,m,b);
+}
+function linkColor(l){if(l.kind==="wan")return C.wan;if(l.kind==="trunk")return C.trunk;if(l.kind==="vpn")return C.vpn;if(l.kind==="bt")return C.bt;if(l.kind==="cell")return C.wan;return C[l.vlan]||C.trunk;}
+const DASHED={wifi:1,bt:1,vpn:1,cell:1};
+LINKS.forEach(l=>{
+  l.curve=curveFor(l);l.len=l.curve.getLength();l.color=linkColor(l);
+  if(DASHED[l.kind]){
+    const geo=new THREE.BufferGeometry().setFromPoints(l.curve.getPoints(Math.max(24,Math.round(l.len*3))));
+    l.mat=new THREE.LineDashedMaterial({color:l.color,dashSize:l.kind==="vpn"?0.5:0.22,gapSize:l.kind==="vpn"?0.35:0.16,transparent:true,opacity:l.kind==="vpn"?0.55:0.75});
+    l.obj=new THREE.Line(geo,l.mat);l.obj.computeLineDistances();
+  }else{
+    const r=l.kind==="wan"?0.06:l.kind==="trunk"?0.05:(l.kind==="hdmi"||l.kind==="usb")?0.025:0.035;
+    l.mat=new THREE.MeshBasicMaterial({color:l.color,transparent:true,opacity:0.85});
+    l.obj=new THREE.Mesh(new THREE.TubeGeometry(l.curve,Math.max(12,Math.round(l.len*3)),r,6,false),l.mat);
+  }
+  l.base=l.mat.opacity;scene.add(l.obj);
+});
+let loopObj=null,loopCurve=null;
+(function(){const a=NMAP["hq-asw1"].port.clone().add(new THREE.Vector3(0.2,0,0.1)),b=NMAP["hq-desksw"].port.clone().add(new THREE.Vector3(0.15,0,0));
+ const m=a.clone().add(b).multiplyScalar(0.5);m.x+=1.6;m.y+=1.2;loopCurve=new THREE.QuadraticBezierCurve3(a,m,b);
+ loopObj=new THREE.Mesh(new THREE.TubeGeometry(loopCurve,30,0.04,6,false),new THREE.MeshBasicMaterial({color:C.down}));loopObj.visible=false;scene.add(loopObj);})();
+
+/* ---------- state ---------- */
+const nodeStatus={};const linkStatus={};
+NODES.forEach(n=>nodeStatus[n.id]="ok");
+let selected=null,hovered=null,selFlow=null,storeSel="s1",showAll=false,ambient=!REDUCED;
+let scen=null,scenState=null,focusSet=null;
+let done={};try{done=JSON.parse(localStorage.getItem("rnlab-done")||"{}")||{};}catch(e){done={};}
+
+function applyStatusVisuals(){
+  NODES.forEach(n=>{
+    const st=nodeStatus[n.id];
+    n.mats.forEach(m=>{if(st==="down"){m.emissive.setHex(0x5a0d16);m.emissiveIntensity=1;}else if(st==="warn"||st==="storm"){m.emissive.setHex(0x4a2a05);m.emissiveIntensity=1;}else{m.emissive.setHex(m.userData.e0);m.emissiveIntensity=m.userData.ei0;}});
+    if(n.led)n.led.material.color.setHex(st==="ok"?C.ok:st==="down"?C.down:C.warn);
+    if(n.screen){const off=(n.id==="hq-display"&&linkStatus[key("hq-avpc","hq-display")]==="down")||st==="down";n.screen.material.emissiveIntensity=off?0.05:(n.screen.material.userData.ei0||0.7);}
+  });
+  LINKS.forEach(l=>{const dn=linkStatus[l.k]==="down";l.mat.color.setHex(dn?C.down:l.color);});
+  loopObj.visible=!!(scen&&scen.apply.loop&&!scenState.fixed);
+  renderHealth();
+}
+function renderHealth(){
+  const h=$("#health");h.innerHTML="";
+  Object.entries(SITES).forEach(([id,S])=>{
+    let bad=0,warn=0;
+    NODES.forEach(n=>{if(n.site===id){if(nodeStatus[n.id]==="down")bad++;else if(nodeStatus[n.id]!=="ok")warn++;}});
+    LINKS.forEach(l=>{if(linkStatus[l.k]==="down"&&(NMAP[l.a].site===id||NMAP[l.b].site===id))warn++;});
+    if(id==="s2"&&nodeStatus["s2-modem"]==="down"&&nodeStatus["s2-lte"]==="ok"){bad=0;warn=Math.max(warn,1);}
+    const c=document.createElement("span");c.className="chip"+(bad?" down":warn?" warn":"");c.innerHTML=`<i></i>${S.name}`;h.appendChild(c);
+  });
+  let cb=["shopify","pay","m365","dns"].some(id=>nodeStatus[id]!=="ok");
+  const c=document.createElement("span");c.className="chip"+(cb?" down":"");c.innerHTML="<i></i>Cloud";h.appendChild(c);
+}
+
+/* ---------- packets ---------- */
+const packets=[];const pGeo=new THREE.SphereGeometry(0.11,10,8);
+function linkOf(a,b){return LMAP[key(a,b)];}
+function resolve(ids){return ids.map(id=>{const m=/^(s\d)-modem$/.exec(id);if(m&&nodeStatus[id]==="down"&&nodeStatus[m[1]+"-lte"]==="ok")return m[1]+"-lte";return id;});}
+function spawn(ids,color,opts){
+  opts=opts||{};if(packets.length>420)return;
+  const r=resolve(ids);const segs=[];
+  for(let i=0;i<r.length-1;i++){const l=linkOf(r[i],r[i+1]);if(!l)return;segs.push({l,from:r[i],to:r[i+1]});}
+  const m=new THREE.Mesh(pGeo,new THREE.MeshBasicMaterial({color,transparent:true,opacity:1}));scene.add(m);
+  const p={segs,i:0,t:0,m,rt:!!opts.rt,back:false,speed:opts.speed||7,checked:false,stopAt:null,dying:0,dead:false};
+  placePacket(p);packets.push(p);
+}
+function placePacket(p){const s=p.segs[p.i];const tt=s.from===s.l.a?p.t:1-p.t;p.m.position.copy(s.l.curve.getPoint(Math.min(1,Math.max(0,tt))));}
+function killPacket(p,fail){p.dying=0.0001;p.fail=fail;if(fail){p.m.material.color.setHex(C.down);}}
+const stormPk=[];
+function spawnStorm(){
+  const m=new THREE.Mesh(pGeo,new THREE.MeshBasicMaterial({color:C.down,transparent:true}));scene.add(m);
+  stormPk.push({m,t:Math.random(),leg:Math.random()<0.5?0:1,life:0});
+}
+function updatePackets(dt){
+  for(let k=packets.length-1;k>=0;k--){
+    const p=packets[k];
+    if(p.dying){p.dying+=dt;const s=p.fail?1+p.dying*6:1-p.dying*2;p.m.scale.setScalar(Math.max(0.01,s));p.m.material.opacity=Math.max(0,1-p.dying*2);if(p.dying>0.5){scene.remove(p.m);p.m.material.dispose();packets.splice(k,1);}continue;}
+    const s=p.segs[p.i];
+    if(!p.checked){p.checked=true;p.stopAt=null;
+      if(p.i===0&&nodeStatus[s.from]==="down")p.stopAt=0.02;
+      else if(linkStatus[s.l.k]==="down")p.stopAt=0.5;
+      else if(nodeStatus[s.to]==="down")p.stopAt=0.97;
+      else if(nodeStatus[s.to]==="storm"&&Math.random()<0.45)p.stopAt=0.9;}
+    const slow=(nodeStatus[s.to]==="storm"||nodeStatus[s.from]==="storm")?0.35:1;
+    p.t+=dt*p.speed*slow/Math.max(0.5,s.l.len);
+    if(p.stopAt!==null&&p.t>=p.stopAt){p.t=p.stopAt;placePacket(p);killPacket(p,true);continue;}
+    if(p.t>=1){p.t=0;p.i++;p.checked=false;
+      if(p.i>=p.segs.length){
+        if(p.rt&&!p.back){p.back=true;p.segs=p.segs.slice().reverse().map(x=>({l:x.l,from:x.to,to:x.from}));p.i=0;p.m.material.color.setHex(C.resp);}
+        else{p.i=p.segs.length-1;p.t=1;placePacket(p);killPacket(p,false);continue;}
+      }}
+    placePacket(p);
+  }
+  for(let k=stormPk.length-1;k>=0;k--){const q=stormPk[k];q.life+=dt;q.t+=dt*1.6;if(q.t>1){q.t=0;q.leg^=1;}
+    const pt=q.leg?loopCurve.getPoint(q.t):LMAP[key("hq-asw1","hq-desksw")].curve.getPoint(1-q.t);q.m.position.copy(pt);
+    if(q.life>3||!loopObj.visible){scene.remove(q.m);q.m.material.dispose();stormPk.splice(k,1);}}
+}
+
+/* ---------- spawning schedule ---------- */
+const ALL_FLOWS=Object.keys(FLOWS);
+let tAmb=0,tSel=0,tFocus=0,tStorm=0;
+function schedule(dt){
+  tAmb+=dt;tSel+=dt;tFocus+=dt;tStorm+=dt;
+  if(ambient&&tAmb>(selFlow||scen?0.7:0.22)){tAmb=0;const f=FLOWS[ALL_FLOWS[(Math.random()*ALL_FLOWS.length)|0]];spawn(f.nodes,f.color,{rt:f.rt,speed:6+Math.random()*2});}
+  if(selFlow&&tSel>0.8){tSel=0;const f=FLOWS[selFlow];spawn(f.nodes,f.color,{rt:f.rt});}
+  if(scen&&tFocus>0.55){tFocus=0;
+    const ids=scen.focus;const f=FLOWS[ids[(Math.random()*ids.length)|0]];if(f)spawn(f.nodes,f.color,{rt:f.rt});
+    if(scen.extraFlows&&Math.random()<0.6)scen.extraFlows.forEach(x=>spawn(x,C.pos,{rt:true}));
+    if(scen.bad&&!scenState.fixed)scen.bad.forEach(x=>spawn(x,C.down,{speed:9}));}
+  if(loopObj.visible&&tStorm>0.08){tStorm=0;spawnStorm();}
+}
+
+/* ---------- highlight flow path ---------- */
+function setHighlight(ids){
+  const keys=new Set();if(ids){const r=resolve(ids);for(let i=0;i<r.length-1;i++)keys.add(key(r[i],r[i+1]));}
+  LINKS.forEach(l=>{l.mat.opacity=ids?(keys.has(l.k)?1:0.14):l.base;});
+}
+
+/* ---------- labels ---------- */
+const v3=new THREE.Vector3();
+function placeLabel(el,v,w,h){v3.copy(v).project(camera);if(v3.z>1||v3.x<-1.2||v3.x>1.2||v3.y<-1.2||v3.y>1.2){el.style.display="none";return;}el.style.display="";el.style.left=((v3.x+1)/2*w)+"px";el.style.top=((1-v3.y)/2*h)+"px";}
+function updateLabels(){
+  const w=stage.clientWidth,h=stage.clientHeight;
+  siteLabels.forEach(s=>placeLabel(s.el,s.v,w,h));
+  zoneLabels.forEach(s=>placeLabel(s.el,s.v,w,h));
+  const flowSet=selFlow?new Set(resolve(FLOWS[selFlow].nodes)):null;
+  NODES.forEach(n=>{
+    const st=nodeStatus[n.id];
+    const show=showAll||!n.site||n.id===selected||n.id===hovered||st!=="ok"||(flowSet&&flowSet.has(n.id))||(focusSet&&focusSet.has(n.id));
+    n.el.hidden=!show;if(!show)return;
+    n.el.className="lbl"+(n.site?"":" cloud")+(st==="down"?" down":st!=="ok"?" warn":"")+(n.id===selected?" sel":"");
+    v3.copy(n.pos);v3.y+=n.top+(n.site?0.1:0);placeLabel(n.el,v3,w,h);
+  });
+}
+
+/* ---------- camera views ---------- */
+const VIEWS={
+  overview:{p:[-3,30,40],t:[-3,2,0]},hq:{p:[-15,15,19],t:[-15,1,0]},
+  s1:{p:[10,10.5,-1.5],t:[10,1,-13]},s2:{p:[10,10.5,11.5],t:[10,1,0]},s3:{p:[10,10.5,24.5],t:[10,1,13]},
+  cloud:{p:[-3,15,20],t:[-3,10,-1]}};
+let tween=null;
+function fly(name){const v=VIEWS[name]||VIEWS.overview;
+  if(REDUCED){camera.position.set(...v.p);controls.target.set(...v.t);return;}
+  tween={t:0,p0:camera.position.clone(),t0:controls.target.clone(),p1:new THREE.Vector3(...v.p),t1:new THREE.Vector3(...v.t)};}
+function stepTween(dt){if(!tween)return;tween.t=Math.min(1,tween.t+dt/0.9);const e=tween.t<0.5?2*tween.t*tween.t:1-Math.pow(-2*tween.t+2,2)/2;
+  camera.position.lerpVectors(tween.p0,tween.p1,e);controls.target.lerpVectors(tween.t0,tween.t1,e);if(tween.t>=1)tween=null;}
+$("#views").addEventListener("click",e=>{const b=e.target.closest("button[data-view]");if(b)fly(b.dataset.view);});
+
+/* ---------- picking ---------- */
+const ray=new THREE.Raycaster(),mouse=new THREE.Vector2();
+function pick(ev){const r=canvas.getBoundingClientRect();mouse.x=((ev.clientX-r.left)/r.width)*2-1;mouse.y=-((ev.clientY-r.top)/r.height)*2+1;ray.setFromCamera(mouse,camera);
+  const hit=ray.intersectObjects(pickables,false)[0];return hit?hit.object.userData.node:null;}
+let downAt=null;
+canvas.addEventListener("pointerdown",e=>{downAt=[e.clientX,e.clientY];});
+canvas.addEventListener("pointerup",e=>{if(!downAt)return;const moved=Math.hypot(e.clientX-downAt[0],e.clientY-downAt[1]);downAt=null;if(moved>6)return;const id=pick(e);select(id);});
+let lastMove=0;
+canvas.addEventListener("pointermove",e=>{const now=performance.now();if(now-lastMove<50)return;lastMove=now;const id=pick(e);hovered=id;canvas.style.cursor=id?"pointer":"grab";});
+canvas.addEventListener("pointerleave",()=>{hovered=null;});
+document.addEventListener("keydown",e=>{if(e.key==="Escape")select(null);});
+
+/* ---------- inspector ---------- */
+const esc=s=>String(s).replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+function select(id){
+  selected=id;const ins=$("#inspector");
+  if(!id){ins.hidden=true;return;}
+  const n=NMAP[id],T=TYPE[n.type],st=nodeStatus[id];
+  const conns=LINKS.filter(l=>l.a===id||l.b===id).map(l=>{const o=l.a===id?l.b:l.a;const dn=linkStatus[l.k]==="down";
+    return `<li><button data-go="${o}">${esc(NMAP[o].name)}</button> <span>· ${esc(KIND_NAME[l.kind])}${l.vlan&&l.kind!=="bt"?" · "+esc(VLAN_NAME[l.vlan]):""}${dn?" · <b style=\"color:var(--down)\">DOWN</b>":""}</span></li>`;}).join("");
+  const stTxt=st==="ok"?"Online":st==="down"?"Down":st==="storm"?"Overloaded":"Degraded";
+  const siteName=n.site?SITES[n.site].name:"Cloud";
+  ins.innerHTML=`<div class="ins-head"><div><div class="eyebrow">${esc(T.label)} · ${esc(siteName)}</div><h3>${esc(n.name)}</h3></div><button class="x" aria-label="Close" data-close>✕</button></div>
+   <span class="pill ${st==="ok"?"":st==="down"?"down":"warn"}">● ${stTxt}</span>
+   <dl class="kv"><dt>IP</dt><dd>${esc(n.ip||"—")}</dd><dt>Network</dt><dd>${esc(n.vlan||"—")}</dd><dt>Hardware</dt><dd>${esc(n.model||"—")}</dd></dl>
+   <p>${esc(n.role||T.role)}</p>
+   <h4>Connected to</h4><ul class="conn">${conns}</ul>
+   <h4>When it fails, check</h4><ol>${T.check.map(c=>`<li>${esc(c)}</li>`).join("")}</ol>`;
+  ins.hidden=false;
+}
+$("#inspector").addEventListener("click",e=>{if(e.target.closest("[data-close]"))select(null);const g=e.target.closest("[data-go]");if(g)select(g.dataset.go);});
+
+/* ---------- tabs ---------- */
+function showTab(name){
+  document.querySelectorAll(".tabs button").forEach(x=>x.setAttribute("aria-selected",x.dataset.tab===name?"true":"false"));
+  ["role","explore","incidents","docs"].forEach(t=>{$("#tab-"+t).hidden=t!==name;});
+}
+document.querySelectorAll(".tabs button").forEach(b=>b.addEventListener("click",()=>showTab(b.dataset.tab)));
+
+/* ---------- explore: flows ---------- */
+function hexCss(c){return "#"+c.toString(16).padStart(6,"0");}
+function renderFlows(){
+  const list=$("#flowList");list.innerHTML="";
+  const items=[...STORE_FLOW_TYPES.map(ft=>storeSel+"-"+ft.t),...HQ_FLOWS];
+  items.forEach((id,idx)=>{
+    if(idx===STORE_FLOW_TYPES.length){const h=document.createElement("h2");h.textContent="HQ traffic";h.style.margin="10px 0 2px";list.appendChild(h);}
+    const f=FLOWS[id];const b=document.createElement("button");b.className="flow";b.setAttribute("aria-pressed",selFlow===id?"true":"false");
+    b.innerHTML=`<i class="dot" style="background:${hexCss(f.color)}"></i><span><b>${esc(f.name)}</b><small>${esc(f.sub)}</small></span>`;
+    b.addEventListener("click",()=>chooseFlow(selFlow===id?null:id));list.appendChild(b);
+  });
+}
+function chooseFlow(id){
+  selFlow=id;renderFlows();setHighlight(id?FLOWS[id].nodes:null);
+  const hops=$("#hops");
+  if(!id){hops.hidden=true;return;}
+  const f=FLOWS[id];const r=resolve(f.nodes);
+  hops.innerHTML=r.map((nid,i)=>`<li><b>${esc(NMAP[nid].name)}</b><span>${esc(f.notes[i]||"")}${nid!==f.nodes[i]?" (failover path)":""}</span></li>`).join("")+(f.rt?`<li><b>Response</b><span>The reply travels back along the same path (cyan packets).</span></li>`:"");
+  hops.hidden=false;
+  fly(f.store||"hq");
+}
+$("#storeSeg").addEventListener("click",e=>{const b=e.target.closest("button[data-store]");if(!b)return;storeSel=b.dataset.store;
+  document.querySelectorAll("#storeSeg button").forEach(x=>x.setAttribute("aria-pressed",x===b?"true":"false"));
+  if(selFlow&&FLOWS[selFlow].store){const t=selFlow.split("-")[1];chooseFlow(storeSel+"-"+t);}else renderFlows();fly(storeSel);});
+$("#tgLabels").addEventListener("change",e=>{showAll=e.target.checked;});
+$("#tgWireless").addEventListener("change",e=>{LINKS.forEach(l=>{if(l.kind==="wifi"||l.kind==="bt"||l.kind==="cell")l.obj.visible=e.target.checked;});});
+$("#tgVpn").addEventListener("change",e=>{LINKS.forEach(l=>{if(l.kind==="vpn")l.obj.visible=e.target.checked;});});
+const tgA=$("#tgAmbient");tgA.checked=ambient;tgA.addEventListener("change",e=>{ambient=e.target.checked;});
+
+/* ---------- incidents ---------- */
+function renderIncList(){
+  const list=$("#incList");list.innerHTML="";
+  SCEN.forEach(s=>{const b=document.createElement("button");b.className="inc";
+    b.innerHTML=`<span class="sev ${s.sev}">${s.sev.toUpperCase()}</span><span><b>${esc(s.title)}</b><small>${esc(s.sub)}</small></span>${done[s.id]?'<span class="done">✓ solved</span>':"<span></span>"}`;
+    b.addEventListener("click",()=>startScen(s.id));list.appendChild(b);});
+}
+function resetNetwork(){
+  NODES.forEach(n=>nodeStatus[n.id]="ok");Object.keys(linkStatus).forEach(k=>delete linkStatus[k]);
+  scen=null;scenState=null;applyStatusVisuals();
+}
+function startScen(id){
+  endTour(true);clearFocus();renderRole();
+  resetNetwork();chooseFlow(null);
+  scen=SCEN.find(s=>s.id===id);scenState={run:new Set(),fixed:false,solved:false,tries:0,picked:null};
+  const ap=scen.apply;Object.entries(ap.nodes||{}).forEach(([k,v])=>nodeStatus[k]=v);(ap.links||[]).forEach(([a,b])=>linkStatus[key(a,b)]="down");
+  applyStatusVisuals();fly(scen.site==="all"?"overview":scen.site);
+  $("#incHome").hidden=true;$("#incActive").hidden=false;renderScen();
+  if(selected)select(selected);
+}
+function renderScen(){
+  const s=scen,S=scenState,box=$("#incActive");
+  const key=s.checks.filter(c=>c.tag==="clue").length;const found=s.checks.filter((c,i)=>c.tag==="clue"&&S.run.has(i)).length;
+  const risky=s.checks.filter((c,i)=>c.tag==="risk"&&S.run.has(i)).length;
+  let h=`<div class="row" style="justify-content:space-between"><button class="btn" data-act="back">← All incidents</button><button class="btn" data-act="reset">Reset network</button></div>
+   <section class="ticket"><div class="meta"><span class="sev ${s.sev}">${s.sev.toUpperCase()}</span><span>${esc(s.caller)}</span><span>${esc(s.time)}</span></div><q>“${esc(s.msg)}”</q></section>
+   <section><h2>Investigate</h2><div class="checks">`;
+  s.checks.forEach((c,i)=>{const r=S.run.has(i);
+    h+=`<div class="check"${r?" data-run":""}><button data-check="${i}" ${r?'aria-expanded="true"':""}>${esc(c.q)}</button>${r?`<div class="out"><span class="tag ${c.tag}">${c.tag==="clue"?"Useful clue":c.tag==="risk"?"Risky move":"Didn’t narrow it down"}</span>\n${esc(c.a)}</div>`:""}</div>`;});
+  h+=`</div><p class="score">${S.run.size} checks run · ${found}/${key} useful clues found${risky?` · ${risky} risky move${risky>1?"s":""}`:""}</p></section>
+   <section><h2>Make the call: root cause</h2><div class="opts">`;
+  s.opts.forEach((o,i)=>{h+=`<label for="opt-${s.id}-${i}"><input type="radio" name="rc" id="opt-${s.id}-${i}" value="${i}" ${S.picked===i?"checked":""} ${S.solved?"disabled":""}>${esc(o)}</label>`;});
+  h+=`</div>`;
+  if(!S.solved)h+=`<div class="row" style="margin-top:8px"><button class="btn primary" data-act="submit">Submit diagnosis</button></div>`;
+  if(S.wrong&&!S.solved)h+=`<div class="feedback bad" style="margin-top:8px"><b>Not quite.</b> ${esc(s.hint)}</div>`;
+  h+=`</section>`;
+  if(S.solved){
+    h+=`<section class="feedback good"><h3>Correct. Here’s the fix</h3><ol>${s.fix.map(x=>`<li>${esc(x)}</li>`).join("")}</ol>
+     <h3>Stop it happening again</h3><ul>${s.prevent.map(x=>`<li>${esc(x)}</li>`).join("")}</ul>
+     <div class="coach"><h3>In one sentence</h3><p class="say">${esc(s.say)}</p></div>
+     <div class="row" style="margin-top:10px">${S.fixed?`<span class="done">✓ Fix applied${s.afterNote?"":", traffic recovering"}</span>`:'<button class="btn primary" data-act="fix">Apply the fix</button>'}</div>
+     ${S.fixed&&s.afterNote?`<p style="margin:8px 0 0">${esc(s.afterNote)}</p>`:""}</section>`;
+  }
+  box.innerHTML=h;
+}
+$("#incActive").addEventListener("click",e=>{
+  const c=e.target.closest("[data-check]");if(c){scenState.run.add(+c.dataset.check);renderScen();return;}
+  const a=e.target.closest("[data-act]");if(!a)return;const act=a.dataset.act;
+  if(act==="back"){resetNetwork();$("#incActive").hidden=true;$("#incHome").hidden=false;renderIncList();fly("overview");}
+  else if(act==="reset"){startScen(scen.id);}
+  else if(act==="submit"){const r=document.querySelector('#incActive input[name="rc"]:checked');if(!r)return;scenState.picked=+r.value;
+    if(+r.value===scen.ans){scenState.solved=true;scenState.wrong=false;done[scen.id]=1;try{localStorage.setItem("rnlab-done",JSON.stringify(done));}catch(err){}}else{scenState.wrong=true;}renderScen();}
+  else if(act==="fix"){scenState.fixed=true;
+    if(scen.after){Object.entries(scen.after.nodes||{}).forEach(([k,v])=>nodeStatus[k]=v);}
+    else{NODES.forEach(n=>nodeStatus[n.id]="ok");Object.keys(linkStatus).forEach(k=>delete linkStatus[k]);}
+    applyStatusVisuals();renderScen();if(selected)select(selected);}
+});
+$("#incActive").addEventListener("change",e=>{if(e.target.name==="rc")scenState.picked=+e.target.value;});
+
+/* ---------- role tab ---------- */
+const SCEN_NAME={};SCEN.forEach(s=>SCEN_NAME[s.id]=s.sub);
+let roleOn=-1;
+function renderRole(){
+  const list=$("#roleList");list.innerHTML="";
+  ROLE.forEach((r,i)=>{
+    const d=document.createElement("div");d.className="role"+(roleOn===i?" on":"");
+    d.innerHTML=`<h3>${esc(r.t)}</h3><p class="jd">${esc(r.jd)}</p><p class="where"><b>In the model</b><br>${esc(r.where)}</p>
+     <div><span class="lbl2">How I’d handle it</span><ul>${r.do.map(x=>`<li>${esc(x)}</li>`).join("")}</ul></div>
+     <div class="row"><button class="btn sm" data-show="${i}">${roleOn===i?"Hide":"Show"}</button>${r.drill?`<button class="btn sm" data-drill="${r.drill}">Drill: ${esc(SCEN_NAME[r.drill])}</button>`:""}${r.tab?`<button class="btn sm" data-tab-go="${r.tab}">Open Docs</button>`:""}</div>`;
+    list.appendChild(d);
+  });
+}
+function clearFocus(){focusSet=null;roleOn=-1;}
+$("#roleList").addEventListener("click",e=>{
+  const s=e.target.closest("[data-show]");
+  if(s){const i=+s.dataset.show;
+    if(roleOn===i){clearFocus();chooseFlow(null);renderRole();return;}
+    if(scen)leaveScen();endTour(true);
+    roleOn=i;const r=ROLE[i];focusSet=r.nodes?new Set(r.nodes):null;select(null);
+    chooseFlow(r.flow||null);fly(r.view);renderRole();return;}
+  const d=e.target.closest("[data-drill]");if(d){clearFocus();renderRole();endTour(true);showTab("incidents");startScen(d.dataset.drill);return;}
+  const t=e.target.closest("[data-tab-go]");if(t)showTab(t.dataset.tabGo);
+});
+function leaveScen(){resetNetwork();$("#incActive").hidden=true;$("#incHome").hidden=false;renderIncList();}
+
+/* ---------- inventory ---------- */
+let invSite="all";
+function renderInv(){
+  const rows=NODES.filter(n=>invSite==="all"||(invSite==="cloud"?!n.site:n.site===invSite));
+  $("#invBody").innerHTML=rows.map(n=>`<tr><td>${esc(n.name)}</td><td>${n.site?esc(SITES[n.site].name):"Cloud"}</td><td class="mono">${esc(n.ip||"—")}</td><td>${esc(n.model||TYPE[n.type].label)}</td></tr>`).join("");
+  const per=NODES.filter(n=>n.site==="s1").length,hq=NODES.filter(n=>n.site==="hq").length;
+  $("#invNote").textContent=`${rows.length} shown. Store template: ${per} devices × 23 stores = ${per*23}, plus ${hq} at HQ.`;
+}
+$("#invSeg").addEventListener("click",e=>{const b=e.target.closest("[data-inv]");if(!b)return;invSite=b.dataset.inv;
+  document.querySelectorAll("#invSeg button").forEach(x=>x.setAttribute("aria-pressed",x===b?"true":"false"));renderInv();});
+
+/* ---------- guided tour ---------- */
+let tourI=-1;
+function tourUndoTemp(){if(tourI>=0&&TOUR[tourI].temp){Object.keys(TOUR[tourI].temp).forEach(k=>nodeStatus[k]="ok");applyStatusVisuals();}}
+function tourShow(i){
+  tourUndoTemp();tourI=i;const s=TOUR[i];
+  if(s.temp){Object.entries(s.temp).forEach(([k,v])=>nodeStatus[k]=v);applyStatusVisuals();}
+  focusSet=s.nodes?new Set(s.nodes):null;select(null);chooseFlow(s.flow||null);fly(s.view);
+  $("#tourStep").textContent=`Tour · ${i+1} of ${TOUR.length}`;$("#tourTitle").textContent=s.title;$("#tourText").textContent=s.text;
+  $("#tourPrev").disabled=i===0;$("#tourNext").textContent=i===TOUR.length-1?"Finish":"Next";
+  $("#tour").hidden=false;$(".hint").hidden=true;
+}
+function endTour(silent){
+  if(tourI<0)return;tourUndoTemp();const last=TOUR[tourI];tourI=-1;
+  $("#tour").hidden=true;$(".hint").hidden=false;focusSet=null;chooseFlow(null);
+  if(!silent&&last.end){showTab(last.end);fly("overview");}
+}
+$("#tourBtn").addEventListener("click",()=>{if(scen)leaveScen();clearFocus();renderRole();tourShow(0);});
+$("#tourNext").addEventListener("click",()=>{if(tourI<TOUR.length-1)tourShow(tourI+1);else endTour(false);});
+$("#tourPrev").addEventListener("click",()=>{if(tourI>0)tourShow(tourI-1);});
+$("#tourEnd").addEventListener("click",()=>endTour(true));
+
+/* ---------- loop ---------- */
+function resize(){const w=stage.clientWidth,h=stage.clientHeight;if(!w||!h)return;renderer.setSize(w,h,false);camera.aspect=w/h;camera.updateProjectionMatrix();}
+new ResizeObserver(resize).observe(stage);resize();
+let last=performance.now(),clock=0;
+function frame(now){
+  const dt=Math.min(0.05,(now-last)/1000);last=now;clock+=dt;
+  stepTween(dt);controls.update();schedule(dt);updatePackets(dt);
+  NODES.forEach(n=>{const st=nodeStatus[n.id];let o=0,c=C.accent;
+    if(st!=="ok"){c=st==="down"?C.down:C.warn;o=0.45+0.4*Math.sin(clock*5);}
+    if(focusSet&&focusSet.has(n.id)&&st==="ok"){c=C.accent;o=Math.max(o,0.5+0.35*Math.sin(clock*3));}
+    if(n.id===selected){c=st==="ok"?C.accent:c;o=Math.max(o,0.9);}
+    n.halo.material.color.setHex(c);n.halo.material.opacity=o;});
+  const inet=NMAP.internet.g.children[1];if(inet&&!REDUCED)inet.rotation.y+=dt*0.15;
+  renderer.render(scene,camera);updateLabels();
+  requestAnimationFrame(frame);
+}
+renderFlows();renderIncList();renderRole();renderInv();applyStatusVisuals();
+requestAnimationFrame(frame);
+})();
+</script>
+</body>
+</html>
