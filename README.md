@@ -36,8 +36,8 @@ An interactive 3D model of a retail company's network: one head office and a 23-
 | **Docs** | IP and VLAN plan, hardware inventory, disaster recovery targets (RTO / RPO), and runbooks for network upgrades, new store installs and evaluating new software. |
 | **Guided tour** | A 10-step walkthrough of the whole design. Press **Present** for a full-stage view; arrow keys step through it. |
 | **Zero-touch Macs** | Apple Business Manager and an Apple MDM in the cloud. Watch a sealed Mac ask Apple who owns it, enroll, and arrive configured for its store. |
-| **Open a new store** | **+ New store** builds Store 24 from the template live: same hardware and VLANs, its own IP block, VPN to HQ, LTE backup and a Mac that sets itself up. |
-| **Halo-lit signage** | Backlit signs on HQ and every store, with glowing edges and a warm wash on the wall behind. |
+| **Open a new store** | **+ New store** builds the next store live in a ring around HQ: same hardware and VLANs, its own IP block, VPN to HQ, LTE backup and a Mac that sets itself up. |
+| **Floating 3D signs** | Extruded white lettering for HQ and every store, hovering above each site with a soft white glow. |
 
 ## Design decisions
 
