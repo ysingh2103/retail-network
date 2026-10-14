@@ -124,7 +124,7 @@ tr:last-child td{border-bottom:0}
 .site-lbl{position:absolute;transform:translate(-50%,0);font-family:var(--display);font-weight:600;font-size:14px;letter-spacing:.08em;text-transform:uppercase;color:var(--fg);white-space:nowrap;text-shadow:0 1px 6px #000}
 .site-lbl small{display:block;font-family:var(--mono);font-weight:400;font-size:10.5px;letter-spacing:.04em;text-transform:none;color:var(--muted);text-align:center}
 .zone-lbl{position:absolute;font-family:var(--mono);font-size:10px;letter-spacing:.1em;text-transform:uppercase;color:#6c7d98;white-space:nowrap}
-.views{position:absolute;top:10px;right:10px;display:flex;gap:4px;flex-wrap:wrap;justify-content:flex-end;max-width:calc(100% - 20px)}
+.views{position:absolute;top:46px;right:10px;display:flex;gap:4px;flex-wrap:wrap;justify-content:flex-end;max-width:calc(100% - 20px)}
 .views button{background:rgba(19,29,45,.88);border:1px solid var(--line-2);border-radius:6px;padding:4px 9px;font-family:var(--mono);font-size:11.5px}
 .views button:hover{border-color:var(--accent)}
 .health{position:absolute;top:10px;left:10px;display:flex;gap:4px;flex-wrap:wrap;max-width:calc(100% - 20px)}
@@ -154,6 +154,16 @@ dl.kv dd{margin:0;min-width:0;overflow-wrap:anywhere}
 .credit a,.brand a{color:var(--accent)}
 a.btn{text-decoration:none;color:var(--fg)}
 .brand-top{display:flex;justify-content:space-between;align-items:center;gap:8px}
+.chip.kpi{border-color:color-mix(in srgb,var(--accent) 45%,var(--line-2));color:var(--fg)}
+.views button.grow{border-color:color-mix(in srgb,#ffcf9a 60%,var(--line-2));color:#ffe2bd}
+.views button.grow:hover{border-color:#ffcf9a}
+#toast{position:absolute;left:50%;top:92px;transform:translateX(-50%);width:min(560px,calc(100% - 20px));background:rgba(19,29,45,.96);border:1px solid #ffcf9a;border-radius:10px;padding:10px 14px;font-size:13.5px;box-shadow:0 10px 30px rgba(0,0,0,.45);z-index:6}
+#toast b{color:#ffe2bd}
+#exitPresent{position:absolute;right:10px;bottom:10px;z-index:7}
+body.present .app{grid-template-columns:1fr}
+body.present aside.panel{display:none}
+body.present .stage{min-height:calc(100vh - 24px)}
+body.present #inspector{bottom:56px}
 .btn.sm{padding:3px 9px;font-size:11.5px;font-family:var(--mono)}
 #modeBtn[aria-pressed="true"]{border-color:var(--accent);color:var(--accent)}
 .role-list{display:grid;gap:8px}
@@ -189,7 +199,7 @@ body.present .coach{display:none!important}
     <header class="brand">
       <div class="brand-top">
         <div class="eyebrow" id="eyebrow">Networking portfolio · Yuvraj Singh</div>
-        <a class="btn sm" href="https://github.com/ysingh2103" target="_blank" rel="noopener">GitHub</a>
+        <span class="row" style="gap:6px"><button class="btn sm" id="presentBtn">Present</button><a class="btn sm" href="https://github.com/ysingh2103" target="_blank" rel="noopener">GitHub</a></span>
       </div>
       <h1 id="h1">Retail Network Lab</h1>
       <p id="lede">A head office and a 23-store retail chain, modeled in 3D. Every store runs the same template, so three stand in for all 23. Click any device, watch the traffic, or work through an outage.</p>
@@ -262,6 +272,14 @@ body.present .coach{display:none!important}
     </div>
 
     <div class="scroll" id="tab-docs" role="tabpanel" hidden>
+      <section>
+        <h2>First 90 days in a retail IT role</h2>
+        <ol class="notes">
+          <li><b>Days 1–30 · learn.</b> Shadow store and HQ support, read the runbooks, learn the MDM, RMM and network layout, meet each department.</li>
+          <li><b>Days 31–60 · own.</b> Take a full share of tickets, document gaps as I find them, write a one-page quick-fix guide for stores.</li>
+          <li><b>Days 61–90 · improve.</b> Use ticket data to pick one or two wins: zero-touch rollout for new store devices, self-service password reset, alerting when a store fails over to LTE.</li>
+        </ol>
+      </section>
       <section>
         <h2>Hardware inventory</h2>
         <div class="seg" id="invSeg" role="group" aria-label="Inventory site">
@@ -381,9 +399,12 @@ body.present .coach{display:none!important}
       <button data-view="s2">Store 12</button>
       <button data-view="s3">Store 23</button>
       <button data-view="cloud">Cloud</button>
+      <button id="addStoreBtn" class="grow">+ New store</button>
     </div>
     <div class="hint">Drag to orbit · scroll to zoom · right-drag to pan · click any device</div>
     <div id="inspector" hidden></div>
+    <div id="toast" role="status" hidden></div>
+    <button id="exitPresent" class="btn sm" hidden>Exit presentation</button>
     <div id="tour" hidden>
       <div class="tour-meta"><span id="tourStep"></span><button class="x" id="tourEnd" aria-label="End tour">✕</button></div>
       <h3 id="tourTitle"></h3>
@@ -435,8 +456,9 @@ N("hq-mac2","mac","hq",0.9,4.6,"MacBook · design",{ip:"10.0.20.118 (DHCP)",vlan
 N("hq-avpc","avpc","hq",9,3,"Teams Room compute",{ip:"10.0.40.15 (reservation)",vlan:"40 · AV",model:"Teams Rooms on Windows"});
 N("hq-display","display","hq",6.2,6.7,"Boardroom display",{ip:"—",vlan:"HDMI from Teams Room",model:"75-inch display"});
 N("hq-avbar","avbar","hq",6.2,6.62,"Camera + mic bar",{ip:"—",vlan:"USB to Teams Room",model:"USB video bar"});
-["s1","s2","s3"].forEach(s=>{
+function storeNodes(s){
   const n=SITES[s].n;
+  N(s+"-mac","mac",s,2.2,-2.7,"Back-office MacBook",{ip:`10.${n}.20.31 (DHCP)`,vlan:"20 · Staff (Wi-Fi)",model:"macOS · zero-touch via ABM + MDM"});
   N(s+"-modem","modem",s,-4.3,-2.9,"Cable modem (WAN1)",{ip:"Public IP from ISP (DHCP)",vlan:"WAN1 · primary",model:"ISP cable modem"});
   N(s+"-lte","lte",s,-4.3,-1.1,"LTE failover (WAN2)",{ip:"Carrier-assigned",vlan:"WAN2 · backup",model:"LTE router"});
   N(s+"-fw","firewall",s,-1.9,-2.9,"Store firewall · SD-WAN",{ip:`10.${n}.99.1 · gateway .1 per VLAN`,vlan:"WAN1 + WAN2 + trunk",model:"FortiGate 40F"});
@@ -449,14 +471,17 @@ N("hq-avbar","avbar","hq",6.2,6.62,"Camera + mic bar",{ip:"—",vlan:"USB to Tea
   N(s+"-rdr1","reader",s,-1.75,2.8,"Card reader · reg 1",{ip:"— (Bluetooth to iPad)",vlan:"Bluetooth",model:"Shopify Tap & Chip reader"});
   N(s+"-rdr2","reader",s,0.25,2.8,"Card reader · reg 2",{ip:"— (Bluetooth to iPad)",vlan:"Bluetooth",model:"Shopify Tap & Chip reader"});
   N(s+"-guest","phone",s,2.8,1.5,"Customer phone",{ip:`10.${n}.60.x (DHCP)`,vlan:"60 · Guest (isolated)",model:"Any phone"});
-});
+}
+["s1","s2","s3"].forEach(storeNodes);
 N("internet","cloud",null,-2.5,0,"Internet",{y:8.5});
 N("shopify","service",null,-6.5,-6.5,"Shopify (POS + Admin)",{y:12,col:0x95bf47,role:"Runs the POS app, orders and inventory for online and all stores.",ip:"SaaS",vlan:"—",model:"Cloud"});
 N("pay","service",null,0.5,-7.5,"Shopify Payments",{y:12.6,col:C.pos,role:"Authorizes card payments and returns approved or declined.",ip:"SaaS",vlan:"—",model:"Payment processor"});
 N("m365","service",null,-10,5.5,"Microsoft 365 + Entra ID",{y:11.5,col:C.staff,role:"Email, Teams, OneDrive, and the identity system that runs sign-in, MFA and conditional access.",ip:"SaaS",vlan:"—",model:"Cloud"});
 N("dns","service",null,3,6.5,"Public DNS",{y:11,col:C.srv,role:"Public resolver the HQ DNS server forwards to.",ip:"1.1.1.1",vlan:"—",model:"Resolver"});
 N("backup","service",null,-14,-4,"Off-site backup",{y:10.5,col:0x7dd3c0,role:"Cloud copy of the NAS and Microsoft 365 data. The off-site “1” in the 3-2-1 rule.",ip:"SaaS",vlan:"—",model:"Cloud backup service"});
-N("rmm","service",null,5.5,-2,"Monitoring + MDM",{y:12,col:C.accent,role:"Watches every firewall, switch and AP, alerts IT when something drops, and pushes apps and policies to Macs and PCs.",ip:"SaaS",vlan:"—",model:"RMM / MDM platform"});
+N("rmm","service",null,5.5,-2,"Apple MDM",{y:12,col:C.accent,role:"Manages every Mac and iPad: zero-touch enrollment, store and team groups, configuration profiles, apps, OS updates, lock and wipe.",ip:"SaaS",vlan:"—",model:"Apple device management (MDM)"});
+N("abm","service",null,9.5,-6,"Apple Business Manager",{y:13.2,col:0xe8eef6,role:"Apple's record of which company owns each device. It hands new Macs and iPads to the MDM, so they configure themselves when first switched on.",ip:"SaaS",vlan:"—",model:"Apple portal"});
+N("mon","service",null,-3.5,9,"Monitoring / Windows RMM",{y:12.4,col:0xffb86b,role:"Watches every firewall, switch and AP, alerts IT when a store drops or fails over to LTE, and patches the Windows PCs.",ip:"SaaS",vlan:"—",model:"RMM + network monitoring"});
 
 /* ---------- links ---------- */
 const LINKS=[];const LMAP={};
@@ -470,7 +495,8 @@ L("hq-asw1","hq-pc1","access","staff");L("hq-asw1","hq-desksw","access","staff")
 L("hq-asw1","hq-printer","access","staff");
 L("hq-ap1","hq-mac1","wifi","staff");L("hq-ap1","hq-mac2","wifi","staff");
 L("hq-asw2","hq-avpc","access","av");L("hq-avpc","hq-display","hdmi","av");L("hq-avpc","hq-avbar","usb","av");
-["s1","s2","s3"].forEach(s=>{
+function storeLinks(s){
+  L(s+"-ap",s+"-mac","wifi","staff");
   L(s+"-modem","internet","wan");L(s+"-lte","internet","cell");
   L(s+"-fw",s+"-modem","wan");L(s+"-fw",s+"-lte","wan");
   L(s+"-sw",s+"-fw","trunk");L(s+"-sw",s+"-ap","trunk");
@@ -479,8 +505,9 @@ L("hq-asw2","hq-avpc","access","av");L("hq-avpc","hq-display","hdmi","av");L("hq
   L(s+"-sw",s+"-pc","access","staff");L(s+"-sw",s+"-cam","access","cam");
   L(s+"-ap",s+"-guest","wifi","guest");
   L(s+"-fw","hq-fw","vpn");
-});
-L("internet","shopify","wan");L("internet","pay","wan");L("internet","m365","wan");L("internet","dns","wan");L("internet","backup","wan");L("internet","rmm","wan");
+}
+["s1","s2","s3"].forEach(storeLinks);
+L("internet","shopify","wan");L("internet","pay","wan");L("internet","m365","wan");L("internet","dns","wan");L("internet","backup","wan");L("internet","rmm","wan");L("internet","abm","wan");L("internet","mon","wan");
 
 /* ---------- device knowledge ---------- */
 const TYPE={
@@ -524,10 +551,14 @@ const STORE_FLOW_TYPES=[
   nodes:s=>[s+"-guest",s+"-ap",s+"-sw",s+"-fw",s+"-modem","internet"],
   notes:["Customer joins Corp-Guest.","AP tags guest traffic as VLAN 60 with client isolation on.","Tagged trunk to the firewall.","Policy: Guest → internet only. Blocked from POS, Staff and the VPN.","WAN1 to the ISP.","Public internet."]},
  {t:"mon",name:"Monitoring heartbeat",sub:"Store firewall → monitoring platform",color:C.accent,
-  nodes:s=>[s+"-fw",s+"-modem","internet","rmm"],
-  notes:["Firewall reports status, WAN health and failover events every minute.","WAN1, or LTE if the store has failed over.","Public internet.","A missed heartbeat alerts IT before the store has to call."]}
+  nodes:s=>[s+"-fw",s+"-modem","internet","mon"],
+  notes:["Firewall reports status, WAN health and failover events every minute.","WAN1, or LTE if the store has failed over.","Public internet.","A missed heartbeat alerts IT before the store has to call."]},
+ {t:"ztd",name:"Zero-touch Mac setup",sub:"Sealed Mac → Apple → MDM → configured",color:0xf3f6fb,rt:false,
+  nodes:s=>[s+"-mac",s+"-ap",s+"-sw",s+"-fw",s+"-modem","internet","abm","internet","rmm","internet",s+"-modem",s+"-fw",s+"-sw",s+"-ap",s+"-mac"],
+  notes:["A new Mac, still sealed until today, joins the staff Wi-Fi and starts setup.","The AP puts it on VLAN 20, Staff.","Tagged trunk to the firewall.","Staff VLAN may reach Apple (TCP 443 and 5223). Guest Wi-Fi's captive portal would block this.","Out through WAN1.","Public internet.","Apple Business Manager checks the serial: owned by this company, assigned to the MDM.","The Mac is told where to enroll.","The MDM enrolls it, makes it supervised, and places it in its store group.","Profiles and apps head back down.","Back in through WAN1.","Firewall passes the return traffic.","Switch to the AP.","Wi-Fi to the Mac.","Store Wi-Fi, apps, printer and FileVault are applied. Ready, and IT never opened the box."]}
 ];
-["s1","s2","s3"].forEach(s=>STORE_FLOW_TYPES.forEach(ft=>F(s+"-"+ft.t,{name:ft.name,sub:ft.sub,color:ft.color,nodes:ft.nodes(s),notes:ft.notes,store:s,rt:true})));
+function storeFlows(s){STORE_FLOW_TYPES.forEach(ft=>F(s+"-"+ft.t,{name:ft.name,sub:ft.sub,color:ft.color,nodes:ft.nodes(s),notes:ft.notes,store:s,rt:ft.rt!==false}));}
+["s1","s2","s3"].forEach(storeFlows);
 F("hq-teams",{name:"Teams meeting",sub:"Boardroom → Microsoft 365",color:C.av,rt:true,nodes:["hq-avbar","hq-avpc","hq-asw2","hq-core","hq-fw","hq-modem","internet","m365"],
  notes:["Camera and mics send audio/video to the Teams Room over USB.","Teams Room encodes the call. Media uses UDP 3478–3481 for low delay.","Access port on VLAN 40, AV.","Core routes VLAN 40 to the firewall.","QoS gives Teams media priority. NAT to the public IP.","Fibre to the ISP.","Public internet.","Teams relays the call to the other people in the meeting."]});
 F("hq-m365",{name:"Mac → Microsoft 365",sub:"Wi-Fi user opening Outlook",color:C.staff,rt:true,nodes:["hq-mac1","hq-ap1","hq-asw1","hq-core","hq-fw","hq-modem","internet","m365"],
@@ -550,7 +581,9 @@ const ROLE=[
   do:["Record serial, owner, location and warranty at intake","Update diagrams and the IP plan after every change","Runbooks for repeat work: onboarding, store installs, upgrades"],tab:"docs"},
  {t:"Accounts and access control",jd:"Create, manage and disable user accounts with appropriate access controls.",where:"Microsoft 365 + Entra ID, and every staff device that signs in to it.",nodes:["m365","hq-mac1","hq-pc1","s1-pc"],view:"cloud",
   do:["Onboarding: account, licences, role-based groups, MFA, laptop ready on day one","Offboarding: disable, revoke sessions, remove app access, recover the device","Quarterly access reviews for least privilege"],drill:"phish"},
- {t:"Network monitoring and maintenance",jd:"Monitor and troubleshoot network performance, do routine maintenance, install and configure hardware and software.",where:"Monitoring + MDM in the cloud, heartbeats from every store firewall, switches and APs.",nodes:["rmm","hq-core","hq-asw1","hq-asw2","hq-ap1","hq-ap2","s1-fw","s2-fw","s3-fw"],view:"overview",flow:"s1-mon",
+ {t:"Zero-touch device setup",jd:"Ship Macs and iPads sealed and have them configure themselves for their store or team, with no IT time per device.",where:"Apple Business Manager and the Apple MDM in the cloud; the back-office MacBook in every store.",nodes:["abm","rmm","s2-mac"],view:"s2",flow:"s2-ztd",
+  do:["Buy through the business channel so every serial lands in Apple Business Manager","Layered MDM groups: all Macs → stores → each store","Pre-assign serials, pilot one device, run a compliance check after every rollout"],drill:"ztd"},
+ {t:"Network monitoring and maintenance",jd:"Monitor and troubleshoot network performance, do routine maintenance, install and configure hardware and software.",where:"Monitoring / Windows RMM in the cloud, heartbeats from every store firewall, switches and APs.",nodes:["mon","hq-core","hq-asw1","hq-asw2","hq-ap1","hq-ap2","s1-fw","s2-fw","s3-fw"],view:"overview",flow:"s1-mon",
   do:["Alerts for device down, WAN failover, high CPU, DHCP scope over 80%","Monthly patch and firmware window after hours","Deploy apps and settings through MDM, not by hand"],drill:"loop"},
  {t:"Security policy and training",jd:"Educate employees on IT security policies; train staff on new systems and tools.",where:"Every staff device. The phishing drill starts on a design MacBook.",nodes:["hq-mac1","hq-mac2","hq-pc1","hq-pc2"],view:"hq",
   do:["Short security briefing in every onboarding","Phishing simulations with a quick, blame-free follow-up","One-page guides whenever a new tool rolls out"],drill:"phish"},
@@ -579,8 +612,9 @@ const TOUR=[
  {view:"s2",flow:"s2-pay",temp:{"s2-modem":"down"},title:"When the cable line drops",text:"SD-WAN moves payments to LTE in seconds, so the store keeps selling. Monitoring alerts me before the store has to call."},
  {view:"overview",flow:"s1-hq",title:"Stores to HQ",text:"Each store has an encrypted IPsec tunnel to HQ for the file share and back-office tools. Payments never use the tunnel."},
  {view:"cloud",nodes:["m365","rmm","hq-fw"],flow:"hq-mdm",title:"Identity, devices and security",text:"Entra ID handles sign-in, MFA and access. MDM pushes apps and security policies. The firewall enforces who can talk to whom."},
+ {view:"s2",nodes:["abm","rmm","s2-mac"],flow:"s2-ztd",title:"Zero-touch Mac setup",text:"A new Mac ships sealed. It asks Apple who owns it, Apple hands it to the MDM, and it arrives configured for its store. Follow the white packet on the full trip."},
  {view:"hq",flow:"hq-backup",title:"Disaster recovery",text:"The NAS backs up off-site every night (3-2-1) and gets a restore test every quarter. Targets for each system are in the Docs tab."},
- {view:"overview",title:"How I’d support it",text:"The Incidents tab has nine realistic tickets for this environment, from a store offline to a phishing click. Pick one and I’ll walk through it.",end:"incidents"}
+ {view:"overview",title:"How I’d support it",text:"Every store runs the same template, so growth is repeatable: press “+ New store” to build the next one live. The Incidents tab has ten realistic tickets, from a store offline to a Mac stuck at setup.",end:"incidents"}
 ];
 
 /* ---------- incidents ---------- */
@@ -701,6 +735,20 @@ const SCEN=[
   fix:["Send one message to all stores: known payment outage, use the backup procedure, don’t restart equipment","Watch the status page and update stores every 15–30 minutes","Test a transaction when it recovers, then send the all-clear"],
   prevent:["Keep a pre-written store outage message ready","Make sure every store knows the backup payment procedure","Subscribe IT to Shopify status alerts"],
   say:"When many sites fail together, I look for what they share. Communicating fast mattered more than touching any device."},
+ {id:"ztd",sev:"p3",site:"s3",title:"“The new Mac is stuck on setup”",sub:"Store 23 · zero-touch enrollment",
+  caller:"Store 23 manager",time:"Thu 09:40",msg:"We opened the new MacBook like you said and connected to Wi-Fi, but it says it can’t connect to the activation server.",
+  apply:{nodes:{"s3-mac":"down"}},focus:["s3-ztd"],
+  checks:[
+   {q:"Ask which Wi-Fi network the Mac joined",a:"Corp-Guest. A login page (captive portal) is waiting in the background.",tag:"clue"},
+   {q:"Look up the serial in Apple Business Manager",a:"Serial found, assigned to the Apple MDM.\n→ Ownership is fine.",tag:"clue"},
+   {q:"Check the Mac's group in the MDM",a:"Pre-assigned to Stores › Store 23. Its configuration is ready and waiting.",tag:"clue"},
+   {q:"Check firewall policy for Apple traffic",a:"Guest VLAN: internet only after the captive portal login, so Apple's enrollment servers are unreachable.\nStaff VLAN: Apple allowed (TCP 443, 5223).",tag:"clue"},
+   {q:"Reinstall macOS from a USB installer",a:"Takes an hour and changes nothing. The Mac is fine; the network it's on isn't.",tag:"risk"}],
+  opts:["The Mac is on guest Wi-Fi, and the captive portal blocks Apple's enrollment servers","The serial isn't in Apple Business Manager","The MDM push certificate expired","The Mac is faulty"],ans:0,
+  hint:"Ownership and the MDM group are both fine. What is different about the network this Mac is on?",
+  fix:["Join the staff Wi-Fi or plug into Ethernet, then restart setup","Watch it enroll and land in the Store 23 group in the MDM","Confirm the profiles, apps and printer arrived"],
+  prevent:["Put “use staff Wi-Fi or Ethernet” in the one-page guide shipped with every Mac","Give store managers the staff Wi-Fi details for setup day","Run a compliance check after every store rollout"],
+  say:"Apple ownership and the MDM group were fine, so it had to be the network: guest Wi-Fi's captive portal blocks Apple. Staff Wi-Fi fixed it, and the setup guide now says so."},
  {id:"vpn",sev:"p3",site:"s1",title:"“We can sell, but can’t open the HQ shared drive”",sub:"Store 01 · tunnel to HQ down",
   caller:"Store 01 manager",time:"Wed 08:15",msg:"Registers are fine, but the back-office PC can’t open the shared drive or the HQ schedule since this morning.",
   apply:{links:[["s1-fw","hq-fw"]]},focus:["s1-hq","s1-pay"],
@@ -748,23 +796,63 @@ function zone(site,x0,z0,x1,z1,label,color){
   const el=document.createElement("div");el.className="zone-lbl";el.textContent=label;labelLayer.appendChild(el);
   zoneLabels.push({el,v:new THREE.Vector3(S.x+x0+0.35,0.05,S.z+z1-0.35)});
 }
+/* halo-lit signage: dark letters, glowing edges, warm light washing the wall behind */
+const SIGNS=[];
+const glowTex=(function(){const cv=document.createElement("canvas");cv.width=cv.height=256;const g=cv.getContext("2d");
+  const r=g.createRadialGradient(128,128,8,128,128,128);r.addColorStop(0,"rgba(255,226,186,1)");r.addColorStop(.45,"rgba(255,196,140,.45)");r.addColorStop(1,"rgba(255,170,110,0)");
+  g.fillStyle=r;g.fillRect(0,0,256,256);return new THREE.CanvasTexture(cv);})();
+function signTexture(text){
+  const cv=document.createElement("canvas");cv.width=1024;cv.height=224;const g=cv.getContext("2d");
+  const draw=()=>{g.clearRect(0,0,1024,224);g.font='600 118px "Chakra Petch","Rajdhani",ui-sans-serif,sans-serif';g.textAlign="center";g.textBaseline="middle";
+    try{g.letterSpacing="14px";}catch(e){}
+    g.shadowColor="rgba(255,214,160,1)";g.fillStyle="#ffe6c4";
+    [42,26,12].forEach(b=>{g.shadowBlur=b;g.fillText(text,512,118);});
+    g.shadowBlur=0;g.fillStyle="#141a24";g.fillText(text,512,118);
+    g.lineWidth=2.2;g.strokeStyle="rgba(255,236,210,.95)";g.strokeText(text,512,118);};
+  draw();const tex=new THREE.CanvasTexture(cv);
+  if(document.fonts&&document.fonts.ready)document.fonts.ready.then(()=>{draw();tex.needsUpdate=true;});
+  return tex;
+}
+function makeSign(text,x,y,z,w){
+  const h=w*0.22,grp=new THREE.Group();grp.position.set(x,y,z);
+  mesh(box(w+1.4,h+1.1,0.22),mat(0x0f1724,{roughness:0.95}),0,0,-0.26,grp);
+  const wb=-(h+1.1)/2,ph=y+wb;[-1,1].forEach(sx=>mesh(cylG(0.06,0.06,ph),mat(0x2a3446),sx*(w/2+0.2),(-y+wb)/2,-0.26,grp));
+  const halo=mesh(new THREE.PlaneGeometry(w+2.2,h+2.4),new THREE.MeshBasicMaterial({map:glowTex,color:0xffcf9a,transparent:true,blending:THREE.AdditiveBlending,depthWrite:false,opacity:0.85}),0,0,-0.13,grp);
+  mesh(new THREE.PlaneGeometry(w,w*224/1024),new THREE.MeshBasicMaterial({map:signTexture(text),transparent:true,depthWrite:false}),0,0,-0.06,grp);
+  const strip=mesh(box(w+1.2,0.05,0.05),new THREE.MeshBasicMaterial({color:0xffe2bd}),0,-(h+1.1)/2+0.12,-0.12,grp);
+  const light=new THREE.PointLight(0xffc68c,0.9,10,2);light.position.set(0,0,1.2);grp.add(light);
+  scene.add(grp);SIGNS.push({halo,light,ph:Math.random()*6});return grp;
+}
+
 const siteLabels=[];
-Object.entries(SITES).forEach(([id,S])=>{
-  const plat=mesh(box(S.w,0.3,S.d),mat(0x162033,{roughness:0.9}),S.x,-0.15,S.z,scene);
+const deskM=mat(0x2a303d);
+const GROW=[];
+function buildSite(id,grow){
+  const S=SITES[id];const objs=[];
+  const plat=mesh(box(S.w,0.3,S.d),mat(0x162033,{roughness:0.9}),S.x,-0.15,S.z,scene);objs.push(plat);
   const edges=new THREE.LineSegments(new THREE.EdgesGeometry(plat.geometry),new THREE.LineBasicMaterial({color:0x33476a}));
-  edges.position.copy(plat.position);scene.add(edges);
-  const el=document.createElement("div");el.className="site-lbl";el.innerHTML=`${S.name}<small>${S.sub}</small>`;labelLayer.appendChild(el);
+  edges.position.copy(plat.position);scene.add(edges);objs.push(edges);
+  const el=document.createElement("div");el.className="site-lbl";el.innerHTML=id==="hq"?`${S.name}<small>${S.sub}</small>`:`<small>${S.sub}</small>`;labelLayer.appendChild(el);
   siteLabels.push({el,v:new THREE.Vector3(S.x,0,S.z+S.d/2+0.6)});
-});
+  if(id==="hq"){
+    objs.push(makeSign("HEAD OFFICE",S.x,4.3,S.z-S.d/2-0.55,8.5));
+  }else{
+    zone(id,-5.5,-4.3,5.5,-0.2,"Back room",0x8fb4ff);zone(id,-5.5,-0.2,5.5,4.3,"Sales floor",0xf5c542);
+    objs.push(mesh(box(3.6,0.95,0.85),mat(0x3b3343),S.x-1.3,0.475,S.z+2.62,scene));
+    objs.push(mesh(box(1.4,0.74,0.7),deskM,S.x+3.7,0.37,S.z-2.7,scene));
+    objs.push(mesh(box(1.2,0.74,0.7),deskM,S.x+2.2,0.37,S.z-2.7,scene));
+    objs.push(makeSign(S.name.toUpperCase(),S.x,1.95,S.z-S.d/2-0.45,4.6));
+  }
+  if(grow)objs.forEach((o,i)=>{o.scale.set(1,0.001,1);GROW.push({o,at:clockNow()+i*0.05,dur:0.7});});
+}
 zone("hq",-10.5,-7.75,10.5,-1.3,"Comms room",0x8fb4ff);
 zone("hq",-10.5,-1.3,3.6,7.75,"Open office",0x5b9dff);
 zone("hq",3.6,-1.3,10.5,7.75,"Boardroom",0xff8a65);
-["s1","s2","s3"].forEach(s=>{zone(s,-5.5,-4.3,5.5,-0.2,"Back room",0x8fb4ff);zone(s,-5.5,-0.2,5.5,4.3,"Sales floor",0xf5c542);});
+let _clock=0;function clockNow(){return _clock;}
+Object.keys(SITES).forEach(id=>buildSite(id,false));
 // furniture
-const deskM=mat(0x2a303d);
 (function(){const S=SITES.hq;mesh(box(2.8,0.74,1.5),deskM,S.x+6.2,0.37,S.z+4,scene);mesh(box(1,0.74,0.55),deskM,S.x+9,0.37,S.z+3,scene);
  [["hq-pc1"],["hq-pc2"],["hq-mac1"],["hq-mac2"]].forEach(([id])=>{const n=NMAP[id];mesh(box(1.6,0.06,0.9),deskM,S.x+n.rx,0.74,S.z+n.rz,scene);mesh(box(1.5,0.7,0.05),deskM,S.x+n.rx,0.36,S.z+n.rz-0.42,scene);});})();
-["s1","s2","s3"].forEach(s=>{const S=SITES[s];mesh(box(3.6,0.95,0.85),mat(0x3b3343),S.x-1.3,0.475,S.z+2.62,scene);mesh(box(1.4,0.74,0.7),deskM,S.x+3.7,0.37,S.z-2.7,scene);});
 
 /* device builders */
 function build(n){
@@ -797,7 +885,7 @@ function build(n){
 
 /* place nodes */
 const pickables=[];
-NODES.forEach(n=>{
+function buildNode(n){
   const b=build(n);const S=n.site?SITES[n.site]:null;
   n.pos=S?new THREE.Vector3(S.x+n.rx,0,S.z+n.rz):new THREE.Vector3(n.rx,n.y,n.rz);
   b.g.position.copy(n.pos);if(n.type==="display"||n.type==="avbar"){b.g.rotation.y=0;}
@@ -809,7 +897,8 @@ NODES.forEach(n=>{
   const halo=mesh(new THREE.RingGeometry(r,r+0.12,48),new THREE.MeshBasicMaterial({color:C.accent,transparent:true,opacity:0,side:THREE.DoubleSide,depthWrite:false}),0,n.site?0.03:-0.2,0,b.g);
   halo.rotation.x=-Math.PI/2;n.halo=halo;
   const el=document.createElement("div");el.className="lbl"+(n.site?"":" cloud");el.textContent=n.name;el.hidden=true;labelLayer.appendChild(el);n.el=el;
-});
+}
+NODES.forEach(buildNode);
 
 /* links */
 function curveFor(l){
@@ -821,7 +910,7 @@ function curveFor(l){
 }
 function linkColor(l){if(l.kind==="wan")return C.wan;if(l.kind==="trunk")return C.trunk;if(l.kind==="vpn")return C.vpn;if(l.kind==="bt")return C.bt;if(l.kind==="cell")return C.wan;return C[l.vlan]||C.trunk;}
 const DASHED={wifi:1,bt:1,vpn:1,cell:1};
-LINKS.forEach(l=>{
+function buildLink(l){
   l.curve=curveFor(l);l.len=l.curve.getLength();l.color=linkColor(l);
   if(DASHED[l.kind]){
     const geo=new THREE.BufferGeometry().setFromPoints(l.curve.getPoints(Math.max(24,Math.round(l.len*3))));
@@ -833,7 +922,8 @@ LINKS.forEach(l=>{
     l.obj=new THREE.Mesh(new THREE.TubeGeometry(l.curve,Math.max(12,Math.round(l.len*3)),r,6,false),l.mat);
   }
   l.base=l.mat.opacity;scene.add(l.obj);
-});
+}
+LINKS.forEach(buildLink);
 let loopObj=null,loopCurve=null;
 (function(){const a=NMAP["hq-asw1"].port.clone().add(new THREE.Vector3(0.2,0,0.1)),b=NMAP["hq-desksw"].port.clone().add(new THREE.Vector3(0.15,0,0));
  const m=a.clone().add(b).multiplyScalar(0.5);m.x+=1.6;m.y+=1.2;loopCurve=new THREE.QuadraticBezierCurve3(a,m,b);
@@ -859,6 +949,11 @@ function applyStatusVisuals(){
 }
 function renderHealth(){
   const h=$("#health");h.innerHTML="";
+  const stores=Object.keys(SITES).filter(k=>k!=="hq");
+  const up=stores.filter(k=>!NODES.some(n=>n.site===k&&nodeStatus[n.id]==="down"&&n.type!=="mac")).length;
+  const devs=NODES.filter(n=>n.site&&n.type!=="phone").length;
+  const k1=document.createElement("span");k1.className="chip kpi";k1.textContent=`Stores online ${up}/${stores.length}`;h.appendChild(k1);
+  const k2=document.createElement("span");k2.className="chip kpi";k2.textContent=`${devs} managed devices`;h.appendChild(k2);
   Object.entries(SITES).forEach(([id,S])=>{
     let bad=0,warn=0;
     NODES.forEach(n=>{if(n.site===id){if(nodeStatus[n.id]==="down")bad++;else if(nodeStatus[n.id]!=="ok")warn++;}});
@@ -915,7 +1010,7 @@ function updatePackets(dt){
 }
 
 /* ---------- spawning schedule ---------- */
-const ALL_FLOWS=Object.keys(FLOWS);
+let ALL_FLOWS=Object.keys(FLOWS);
 let tAmb=0,tSel=0,tFocus=0,tStorm=0;
 function schedule(dt){
   tAmb+=dt;tSel+=dt;tFocus+=dt;tStorm+=dt;
@@ -1149,12 +1244,55 @@ $("#tourNext").addEventListener("click",()=>{if(tourI<TOUR.length-1)tourShow(tou
 $("#tourPrev").addEventListener("click",()=>{if(tourI>0)tourShow(tourI-1);});
 $("#tourEnd").addEventListener("click",()=>endTour(true));
 
+/* ---------- grow: open a new store from the template ---------- */
+let storeCount=3;
+function toast(html,ms){const t=$("#toast");t.innerHTML=html;t.hidden=false;clearTimeout(toast._t);if(ms)toast._t=setTimeout(()=>{t.hidden=true;},ms);}
+function addStore(){
+  storeCount++;const id="s"+storeCount;const num=20+storeCount;   // s4 → Store 24, s5 → Store 25 …
+  const z=13+(storeCount-3)*13;
+  SITES[id]={name:"Store "+num,sub:`10.${num}.0.0/16 · new`,x:10,z,w:11,d:8.6,n:num};
+  VIEWS[id]={p:[10,10.5,z+11.5],t:[10,1,z]};
+  const n0=NODES.length,l0=LINKS.length;
+  storeNodes(id);storeLinks(id);storeFlows(id);
+  buildSite(id,true);
+  NODES.slice(n0).forEach((n,i)=>{buildNode(n);nodeStatus[n.id]="ok";n.g.scale.setScalar(0.001);GROW.push({o:n.g,at:_clock+0.5+i*0.09,dur:0.45,all:true});});
+  LINKS.slice(l0).forEach((l,i)=>{buildLink(l);l.obj.visible=false;GROW.push({o:l.obj,at:_clock+1.7+i*0.05,show:true});});
+  ALL_FLOWS=Object.keys(FLOWS);
+  applyStatusVisuals();renderInv();
+  fly(id);
+  setTimeout(()=>{chooseFlow(id+"-ztd");},2600);
+  toast(`<b>Store ${num} built from the template.</b> Same hardware and VLANs, IP block 10.${num}.0.0/16, VPN to HQ, LTE backup, monitoring. Its back-office Mac is setting itself up through zero-touch.`,9000);
+  const b=$("#addStoreBtn");b.textContent=`+ Store ${num+1}`;
+}
+$("#addStoreBtn").addEventListener("click",()=>{if(scen)leaveScen();endTour(true);addStore();});
+
+/* ---------- presentation mode ---------- */
+function setPresent(on){
+  document.body.classList.toggle("present",on);$("#exitPresent").hidden=!on;
+  if(on){if(scen)leaveScen();clearFocus();renderRole();tourShow(0);try{const st=$("#stage");if(st.requestFullscreen)st.requestFullscreen().catch(()=>{});}catch(e){}}
+  else{endTour(true);try{if(document.fullscreenElement)document.exitFullscreen();}catch(e){}}
+}
+$("#presentBtn").addEventListener("click",()=>setPresent(true));
+$("#exitPresent").addEventListener("click",()=>setPresent(false));
+document.addEventListener("fullscreenchange",()=>{if(!document.fullscreenElement&&document.body.classList.contains("present"))setPresent(false);});
+document.addEventListener("keydown",e=>{
+  if(tourI<0)return;
+  if(e.key==="ArrowRight"){e.preventDefault();if(tourI<TOUR.length-1)tourShow(tourI+1);else endTour(false);}
+  if(e.key==="ArrowLeft"){e.preventDefault();if(tourI>0)tourShow(tourI-1);}
+});
+
 /* ---------- loop ---------- */
 function resize(){const w=stage.clientWidth,h=stage.clientHeight;if(!w||!h)return;renderer.setSize(w,h,false);camera.aspect=w/h;camera.updateProjectionMatrix();}
 new ResizeObserver(resize).observe(stage);resize();
 let last=performance.now(),clock=0;
 function frame(now){
-  const dt=Math.min(0.05,(now-last)/1000);last=now;clock+=dt;
+  const dt=Math.min(0.05,(now-last)/1000);last=now;clock+=dt;_clock=clock;
+  for(let i=GROW.length-1;i>=0;i--){const g=GROW[i];if(clock<g.at)continue;
+    if(g.show){g.o.visible=true;GROW.splice(i,1);continue;}
+    const t=Math.min(1,(clock-g.at)/(REDUCED?0.01:g.dur)),e=1-Math.pow(1-t,3);
+    if(g.all)g.o.scale.setScalar(Math.max(0.001,e));else g.o.scale.set(1,Math.max(0.001,e),1);
+    if(t>=1)GROW.splice(i,1);}
+  SIGNS.forEach(sg=>{const b=REDUCED?1:0.88+0.12*Math.sin(clock*0.9+sg.ph);sg.halo.material.opacity=0.85*b;sg.light.intensity=0.9*b;});
   stepTween(dt);controls.update();schedule(dt);updatePackets(dt);
   NODES.forEach(n=>{const st=nodeStatus[n.id];let o=0,c=C.accent;
     if(st!=="ok"){c=st==="down"?C.down:C.warn;o=0.45+0.4*Math.sin(clock*5);}

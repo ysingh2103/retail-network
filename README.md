@@ -23,7 +23,7 @@ An interactive 3D model of a retail company's network: one head office and a 23-
 - Encrypted site-to-site IPsec VPN back to head office
 
 **Cloud services**
-- Shopify POS and Payments, Microsoft 365 + Entra ID, public DNS, off-site backup, and a monitoring / MDM platform
+- Shopify POS and Payments, Microsoft 365 + Entra ID, public DNS, off-site backup, Apple Business Manager, an Apple MDM, and monitoring / Windows RMM
 
 ## Features
 
@@ -31,10 +31,13 @@ An interactive 3D model of a retail company's network: one head office and a 23-
 |---|---|
 | **Traffic flows** | Card payment, inventory sync, store-to-HQ over VPN, guest Wi-Fi, Teams call, DNS lookup, printing, MDM check-in, nightly backup. Each hop is explained. |
 | **Device inspector** | IP, VLAN, hardware, connections, and what to check when it fails. |
-| **Incident drills** | 9 tickets: ISP outage with a dead LTE backup, unpaired card reader, full DHCP scope, DNS service down, boardroom "No Signal", phishing + MFA fatigue, switching loop, payment-processor outage, VPN broken by a firmware upgrade. Run checks (some are risky), diagnose, then apply the fix and watch traffic recover. |
+| **Incident drills** | 10 tickets: ISP outage with a dead LTE backup, unpaired card reader, full DHCP scope, DNS service down, boardroom "No Signal", phishing + MFA fatigue, switching loop, payment-processor outage, VPN broken by a firmware upgrade. Run checks (some are risky), diagnose, then apply the fix and watch traffic recover. |
 | **IT role map** | Each responsibility of a retail IT specialist role mapped to where it lives in the network. |
 | **Docs** | IP and VLAN plan, hardware inventory, disaster recovery targets (RTO / RPO), and runbooks for network upgrades, new store installs and evaluating new software. |
-| **Guided tour** | A 9-step walkthrough of the whole design. |
+| **Guided tour** | A 10-step walkthrough of the whole design. Press **Present** for a full-stage view; arrow keys step through it. |
+| **Zero-touch Macs** | Apple Business Manager and an Apple MDM in the cloud. Watch a sealed Mac ask Apple who owns it, enroll, and arrive configured for its store. |
+| **Open a new store** | **+ New store** builds Store 24 from the template live: same hardware and VLANs, its own IP block, VPN to HQ, LTE backup and a Mac that sets itself up. |
+| **Halo-lit signage** | Backlit signs on HQ and every store, with glowing edges and a warm wash on the wall behind. |
 
 ## Design decisions
 
